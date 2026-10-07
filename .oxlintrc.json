@@ -1,0 +1,55 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "jsPlugins": [
+    "./eslint/no-uninterpolated-template-literals.mjs",
+    "eslint-plugin-perfectionist",
+    "oxlint-tailwindcss"
+  ],
+  "rules": {
+    "local/no-uninterpolated-template-literals": "error",
+    "perfectionist/sort-imports": "error",
+    // Tailwindcss
+    // Correctness
+    "tailwindcss/no-conflicting-classes": "error",
+    "tailwindcss/no-contradicting-variants": "warn",
+    "tailwindcss/no-dark-without-light": "warn",
+    "tailwindcss/no-duplicate-classes": "warn",
+    "tailwindcss/no-dynamic-classes": "error",
+    "tailwindcss/no-unknown-classes": "error",
+    // Modernization
+    "tailwindcss/enforce-canonical": "warn",
+    "tailwindcss/enforce-negative-arbitrary-values": "warn",
+    "tailwindcss/no-deprecated-classes": "error",
+    "tailwindcss/no-unnecessary-arbitrary-value": "warn",
+    "tailwindcss/prefer-scale-token": "off",
+    "tailwindcss/prefer-theme-tokens": "off",
+    // Consistency
+    "tailwindcss/consistent-variant-order": "warn",
+    "tailwindcss/enforce-consistent-important-position": "warn",
+    "tailwindcss/enforce-consistent-line-wrapping": "off",
+    "tailwindcss/enforce-consistent-variable-syntax": "warn",
+    "tailwindcss/enforce-logical": "off",
+    "tailwindcss/enforce-physical": "off",
+    "tailwindcss/enforce-shorthand": "warn",
+    "tailwindcss/enforce-sort-order": "warn",
+    "tailwindcss/no-unnecessary-whitespace": "warn",
+    // Design-system guardrails
+    "tailwindcss/max-class-count": "off",
+    "tailwindcss/no-arbitrary-value": "off",
+    "tailwindcss/no-borrowed-component-styles": "off",
+    "tailwindcss/no-default-palette": "off",
+    "tailwindcss/no-restricted-classes": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "settings": {
+    "tailwindcss": {
+      "entryPoint": "app/globals.css"
+    }
+  }
+}
