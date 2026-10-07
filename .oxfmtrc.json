@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "ignorePatterns": [],
+  "sortTailwindcss": {
+    "stylesheet": "./app/globals.css",
+    "functions": ["clsx", "cn"],
+    "preserveWhitespace": true
+  }
+}
