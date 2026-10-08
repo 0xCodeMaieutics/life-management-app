@@ -10,6 +10,49 @@ export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(
     new File([], "vodafone - aktivierungscode"),
   );
+  const [ocrText, setOcrText] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const [isReading, setIsReading] = useState(false);
+  console.log(ocrText);
+
+  const categorise = async () => {
+    if (!currentFile) return;
+
+    setIsReading(true);
+    setOcrError(null);
+    setOcrText(null);
+    try {
+      const body = new FormData();
+      body.set("file", currentFile);
+
+      const response = await fetch("/api/ocr", {
+        method: "POST",
+        body,
+      });
+
+      const raw = await response.text();
+      let data: { text?: string; error?: string } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as { text?: string; error?: string };
+        } catch {
+          throw new Error("OCR failed");
+        }
+      }
+      if (!response.ok) {
+        throw new Error(data.error ?? "OCR failed");
+      }
+      if (!data.text) {
+        throw new Error("OCR returned no text");
+      }
+
+      setOcrText(data.text);
+    } catch (error) {
+      setOcrError(error instanceof Error ? error.message : "OCR failed");
+    } finally {
+      setIsReading(false);
+    }
+  };
   return (
     <div className="flex size-full flex-col items-center justify-center p-2">
       {currentFile === null ? (
@@ -43,12 +86,22 @@ export default function Home() {
               className={"absolute top-0 right-0"}
               onClick={() => {
                 setCurrentFile(null);
+                setOcrText(null);
+                setOcrError(null);
               }}
             >
               <X />
             </Button>
           </div>
-          <Button>Categorise</Button>
+          <Button disabled={isReading} onClick={categorise}>
+            {isReading ? "Reading…" : "Categorise"}
+          </Button>
+          {ocrError ? (
+            <p className="text-sm text-destructive">{ocrError}</p>
+          ) : null}
+          {ocrText ? (
+            <pre className="text-sm whitespace-pre-wrap">{ocrText}</pre>
+          ) : null}
         </div>
       )}
     </div>
