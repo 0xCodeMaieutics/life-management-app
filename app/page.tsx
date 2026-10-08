@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { FileText as FileIcon, X } from "lucide-react";
 import { useState } from "react";
 
@@ -7,23 +8,11 @@ import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 
 export default function Home() {
-  const [currentFile, setCurrentFile] = useState<File | null>(
-    new File([], "vodafone - aktivierungscode"),
-  );
-  const [ocrText, setOcrText] = useState<string | null>(null);
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const [isReading, setIsReading] = useState(false);
-  console.log(ocrText);
-
-  const categorise = async () => {
-    if (!currentFile) return;
-
-    setIsReading(true);
-    setOcrError(null);
-    setOcrText(null);
-    try {
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const categorise = useMutation({
+    mutationFn: async (file: File) => {
       const body = new FormData();
-      body.set("file", currentFile);
+      body.set("file", file);
 
       const response = await fetch("/api/ocr", {
         method: "POST",
@@ -46,13 +35,10 @@ export default function Home() {
         throw new Error("OCR returned no text");
       }
 
-      setOcrText(data.text);
-    } catch (error) {
-      setOcrError(error instanceof Error ? error.message : "OCR failed");
-    } finally {
-      setIsReading(false);
-    }
-  };
+      return data.text;
+    },
+  });
+
   return (
     <div className="flex size-full flex-col items-center justify-center p-2">
       {currentFile === null ? (
@@ -86,21 +72,25 @@ export default function Home() {
               className={"absolute top-0 right-0"}
               onClick={() => {
                 setCurrentFile(null);
-                setOcrText(null);
-                setOcrError(null);
+                categorise.reset();
               }}
             >
               <X />
             </Button>
           </div>
-          <Button disabled={isReading} onClick={categorise}>
-            {isReading ? "Reading…" : "Categorise"}
+          <Button
+            disabled={categorise.isPending}
+            onClick={() => categorise.mutate(currentFile)}
+          >
+            {categorise.isPending ? "Reading…" : "Categorise"}
           </Button>
-          {ocrError ? (
-            <p className="text-sm text-destructive">{ocrError}</p>
+          {categorise.error ? (
+            <p className="text-sm text-destructive">
+              {categorise.error.message}
+            </p>
           ) : null}
-          {ocrText ? (
-            <pre className="text-sm whitespace-pre-wrap">{ocrText}</pre>
+          {categorise.data ? (
+            <pre className="text-sm whitespace-pre-wrap">{categorise.data}</pre>
           ) : null}
         </div>
       )}
