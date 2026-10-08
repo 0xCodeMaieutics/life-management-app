@@ -4,6 +4,10 @@ import * as z from "zod";
 export const env = createEnv({
   server: {
     MISTRAL_API_KEY: z.string().min(1),
+    DATABASE_URL: z.url(),
+    NODE_ENV: z
+      .enum(["production", "development", "staging"])
+      .default("development"),
   },
 
   /**
