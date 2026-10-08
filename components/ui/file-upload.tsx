@@ -84,7 +84,6 @@ const FileUpload = ({
 
   const renderFileList = () => {
     if (!value) return null;
-    console.log(value)
 
     const files = Array.isArray(value) ? value : [value];
 
