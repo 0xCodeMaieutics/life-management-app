@@ -8,50 +8,48 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 
-type OcrResponse = { text?: string; error?: string };
-
-function requestOcr(body: FormData) {
-  return Effect.gen(function* () {
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch("/api/ocr", {
-          method: "POST",
-          body,
-        }),
-      catch: () => new Error("Failed to send file for OCR"),
-    });
-
-    const raw = yield* Effect.tryPromise({
-      try: () => response.text(),
-      catch: () => new Error("Failed to read OCR response"),
-    });
-
-    let data: OcrResponse = {};
-    if (raw) {
-      data = yield* Effect.try({
-        try: () => JSON.parse(raw) as OcrResponse,
-        catch: () => new Error("OCR failed"),
-      });
-    }
-
-    if (!response.ok) {
-      return yield* Effect.fail(new Error(data.error ?? "OCR failed"));
-    }
-    if (!data.text) {
-      return yield* Effect.fail(new Error("OCR returned no text"));
-    }
-
-    return data.text;
-  });
-}
-
 export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const categorise = useMutation({
     mutationFn: (file: File) => {
       const body = new FormData();
       body.set("file", file);
-      return Effect.runPromise(requestOcr(body));
+
+      return Effect.runPromise(
+        Effect.gen(function* () {
+          const response = yield* Effect.tryPromise({
+            try: () =>
+              fetch("/api/ocr", {
+                method: "POST",
+                body,
+              }),
+            catch: () => new Error("Failed to send file for OCR"),
+          });
+
+          const raw = yield* Effect.tryPromise({
+            try: () => response.text(),
+            catch: () => new Error("Failed to read OCR response"),
+          });
+
+          let data: { text?: string; error?: string } = {};
+          if (raw) {
+            data = yield* Effect.try({
+              try: () =>
+                JSON.parse(raw) as { text?: string; error?: string },
+              catch: () => new Error("OCR failed"),
+            });
+          }
+
+          if (!response.ok) {
+            return yield* Effect.fail(new Error(data.error ?? "OCR failed"));
+          }
+          if (!data.text) {
+            return yield* Effect.fail(new Error("OCR returned no text"));
+          }
+
+          return data.text;
+        }),
+      );
     },
   });
 
