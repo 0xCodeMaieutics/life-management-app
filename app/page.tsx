@@ -8,47 +8,56 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 
+type OcrResponse = { text?: string; error?: string };
+
+function requestOcr(body: FormData) {
+  return Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch("/api/ocr", {
+          method: "POST",
+          body,
+        }),
+      catch: () => "FAILED_OCR_REQUEST" as const,
+    });
+
+    const raw = yield* Effect.tryPromise({
+      try: () => response.text(),
+      catch: () => "FAILED_OCR_REQUEST" as const,
+    });
+
+    let data: OcrResponse = {};
+    if (raw) {
+      data = yield* Effect.try({
+        try: () => JSON.parse(raw) as OcrResponse,
+        catch: () => new Error("OCR failed"),
+      });
+    }
+
+    if (!response.ok) {
+      return yield* Effect.fail(new Error(data.error ?? "OCR failed"));
+    }
+    if (!data.text) {
+      return yield* Effect.fail(new Error("OCR returned no text"));
+    }
+
+    return data.text;
+  }).pipe(
+    Effect.mapError((error) =>
+      error === "FAILED_OCR_REQUEST"
+        ? new Error("OCR request failed")
+        : error,
+    ),
+  );
+}
+
 export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const categorise = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: (file: File) => {
       const body = new FormData();
       body.set("file", file);
-
-      const program = Effect.tryPromise({
-        try: () =>
-          fetch("/api/ocr", {
-            method: "POST",
-            body,
-          }),
-        catch: () => "FAILED_OCR_REQUEST" as const,
-      });
-
-      const response = await Effect.runPromise(
-        Effect.match(program, {
-          onFailure: (error) => {
-            // show toast here
-          },
-          onSuccess: (response) => Effect.tryPromise(() => response.text()),
-        }),
-      );
-
-      let data: { text?: string; error?: string } = {};
-      if (response) {
-        try {
-          data = JSON.parse(response) as { text?: string; error?: string };
-        } catch {
-          throw new Error("OCR failed");
-        }
-      }
-      if (!response.ok) {
-        throw new Error(data.error ?? "OCR failed");
-      }
-      if (!data.text) {
-        throw new Error("OCR returned no text");
-      }
-
-      return data.text;
+      return Effect.runPromise(requestOcr(body));
     },
   });
 
