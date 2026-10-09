@@ -12,6 +12,7 @@
   "rules": {
     "local/no-uninterpolated-template-literals": "error",
     "perfectionist/sort-imports": "error",
+    "eslint/no-unused-vars": "warn",
     // Tailwindcss
     // Correctness
     "tailwindcss/no-conflicting-classes": "error",
