@@ -13,34 +13,8 @@ permissions:
   contents: read
 
 jobs:
-  format:
-    name: Check format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm format:check
-
-  lint:
-    name: Check lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-
-  typecheck:
-    name: Typecheck
+  check:
+    name: Check
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
@@ -52,4 +26,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
+      - parallel:
+          - name: Check format
+            run: pnpm format:check
+          - name: Check lint
+            run: pnpm lint
+          - name: Typecheck
+            run: pnpm typecheck
