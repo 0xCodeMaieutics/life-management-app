@@ -18,12 +18,12 @@ function requestOcr(body: FormData) {
           method: "POST",
           body,
         }),
-      catch: () => new Error("OCR request failed"),
+      catch: () => new Error("Failed to send file for OCR"),
     });
 
     const raw = yield* Effect.tryPromise({
       try: () => response.text(),
-      catch: () => new Error("OCR request failed"),
+      catch: () => new Error("Failed to read OCR response"),
     });
 
     let data: OcrResponse = {};
