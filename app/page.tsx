@@ -18,12 +18,12 @@ function requestOcr(body: FormData) {
           method: "POST",
           body,
         }),
-      catch: () => "FAILED_OCR_REQUEST" as const,
+      catch: () => new Error("OCR request failed"),
     });
 
     const raw = yield* Effect.tryPromise({
       try: () => response.text(),
-      catch: () => "FAILED_OCR_REQUEST" as const,
+      catch: () => new Error("OCR request failed"),
     });
 
     let data: OcrResponse = {};
@@ -42,13 +42,7 @@ function requestOcr(body: FormData) {
     }
 
     return data.text;
-  }).pipe(
-    Effect.mapError((error) =>
-      error === "FAILED_OCR_REQUEST"
-        ? new Error("OCR request failed")
-        : error,
-    ),
-  );
+  });
 }
 
 export default function Home() {
