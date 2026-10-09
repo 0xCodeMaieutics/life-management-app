@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Effect, pipe } from "effect";
+import { Effect } from "effect";
 import { FileText as FileIcon, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
+import { categoriseOcrFile } from "@/lib/ocr-request";
 
 export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
@@ -15,49 +16,7 @@ export default function Home() {
       const body = new FormData();
       body.set("file", file);
 
-      return Effect.runPromise(
-        pipe(
-          Effect.tryPromise({
-            try: () =>
-              fetch("/api/ocr", {
-                method: "POST",
-                body,
-              }),
-            catch: () => new Error("Failed to send file for OCR"),
-          }),
-          Effect.flatMap((response) =>
-            pipe(
-              Effect.tryPromise({
-                try: () => response.text(),
-                catch: () => new Error("Failed to read OCR response"),
-              }),
-              Effect.flatMap((raw) =>
-                pipe(
-                  raw
-                    ? Effect.try({
-                        try: () =>
-                          JSON.parse(raw) as {
-                            text?: string;
-                            error?: string;
-                          },
-                        catch: () => new Error("OCR failed"),
-                      })
-                    : Effect.succeed({} as { text?: string; error?: string }),
-                  Effect.flatMap((data) => {
-                    if (!response.ok) {
-                      return Effect.fail(new Error(data.error ?? "OCR failed"));
-                    }
-                    if (!data.text) {
-                      return Effect.fail(new Error("OCR returned no text"));
-                    }
-                    return Effect.succeed(data.text);
-                  }),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      return Effect.runPromise(categoriseOcrFile(body));
     },
   });
 
