@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { Effect } from "effect";
 import { FileText as FileIcon, X } from "lucide-react";
 import { useState } from "react";
 
@@ -14,16 +15,28 @@ export default function Home() {
       const body = new FormData();
       body.set("file", file);
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body,
+      const program = Effect.tryPromise({
+        try: () =>
+          fetch("/api/ocr", {
+            method: "POST",
+            body,
+          }),
+        catch: () => "FAILED_OCR_REQUEST" as const,
       });
 
-      const raw = await response.text();
+      const response = await Effect.runPromise(
+        Effect.match(program, {
+          onFailure: (error) => {
+            // show toast here
+          },
+          onSuccess: (response) => Effect.tryPromise(() => response.text()),
+        }),
+      );
+
       let data: { text?: string; error?: string } = {};
-      if (raw) {
+      if (response) {
         try {
-          data = JSON.parse(raw) as { text?: string; error?: string };
+          data = JSON.parse(response) as { text?: string; error?: string };
         } catch {
           throw new Error("OCR failed");
         }
