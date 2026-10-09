@@ -11,3 +11,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## References
 
 - For Clean Code rules, see docs/CLEAN_CODE.md
+
+## Development
+
+- Package manager is pnpm 9.4.0 (`packageManager` in `package.json`). Enable it with `corepack prepare pnpm@9.4.0 --activate`.
+- Copy `.env.example` to `.env`. `DATABASE_URL` is `postgresql://postgres:postgres@localhost:5441/postgres`.
+- Cloud Agents start PostgreSQL 17 on `localhost:5441` at boot. With Docker, `docker compose up -d` from `compose.yaml` publishes that same port.
+- `MISTRAL_API_KEY` is required for Categorise. `POST /api/ocr` sends the PDF to Mistral model `mistral-ocr-2512`.
+- `pnpm exec prisma generate` writes the client to `app/generated/prisma` (gitignored). The schema has no models and no migrations yet.
+- Dev server: `pnpm dev` at http://localhost:3000. Checks: `pnpm lint`, `pnpm format:check`, and `pnpm build`.
