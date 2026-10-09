@@ -34,8 +34,7 @@ export default function Home() {
           let data: { text?: string; error?: string } = {};
           if (raw) {
             data = yield* Effect.try({
-              try: () =>
-                JSON.parse(raw) as { text?: string; error?: string },
+              try: () => JSON.parse(raw) as { text?: string; error?: string },
               catch: () => new Error("OCR failed"),
             });
           }
