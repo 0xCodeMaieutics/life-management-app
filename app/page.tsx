@@ -14,28 +14,29 @@ export default function Home() {
       const body = new FormData();
       body.set("file", file);
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body,
-      });
+      try {
+        const response = await fetch("/api/ocr", {
+          method: "POST",
+          body,
+        });
+        const raw = await response.text();
+        const data: { text?: string; error?: string } = JSON.parse(raw) as {
+          text?: string;
+          error?: string;
+        };
 
-      const raw = await response.text();
-      let data: { text?: string; error?: string } = {};
-      if (raw) {
-        try {
-          data = JSON.parse(raw) as { text?: string; error?: string };
-        } catch {
-          throw new Error("OCR failed");
+        if (!response.ok) {
+          throw new Error();
         }
-      }
-      if (!response.ok) {
-        throw new Error(data.error ?? "OCR failed");
-      }
-      if (data.text === undefined) {
-        throw new Error("OCR returned no text");
-      }
 
-      return data.text;
+        if (data.text === undefined) {
+          throw new Error();
+        }
+
+        return data.text;
+      } catch {
+        throw new Error("Request failed");
+      }
     },
   });
 
