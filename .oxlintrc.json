@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc"],
+  "options": {
+    "typeAware": true
+  },
   "categories": {
     "correctness": "error"
   },
@@ -13,6 +16,12 @@
     "local/no-uninterpolated-template-literals": "error",
     "perfectionist/sort-imports": "error",
     "eslint/no-unused-vars": "warn",
+    "typescript/strict-boolean-expressions": [
+      "error",
+      {
+        "allowAny": true
+      }
+    ],
     // Tailwindcss
     // Correctness
     "tailwindcss/no-conflicting-classes": "error",

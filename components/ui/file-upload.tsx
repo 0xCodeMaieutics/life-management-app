@@ -34,13 +34,13 @@ const FileUpload = ({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (files === null) return;
 
     if (multiple) {
       const fileArray = Array.from(files);
       onChange?.(fileArray.length > 0 ? fileArray : null);
     } else {
-      onChange?.(files[0] || null);
+      onChange?.(files[0] ?? null);
     }
   };
 
@@ -50,14 +50,14 @@ const FileUpload = ({
       onChange?.(newFiles.length > 0 ? newFiles : null);
     } else {
       onChange?.(null);
-      if (fileInputRef && "current" in fileInputRef && fileInputRef.current) {
+      if (fileInputRef.current !== null) {
         fileInputRef.current.value = "";
       }
     }
   };
 
   const openFileDialog = () => {
-    if (fileInputRef && "current" in fileInputRef && fileInputRef.current) {
+    if (fileInputRef.current !== null) {
       fileInputRef.current.click();
     }
   };
@@ -67,7 +67,7 @@ const FileUpload = ({
     if (extension === "pdf") {
       return <File className="size-4" />;
     } else if (
-      ["jpg", "jpeg", "png", "gif", "webp"].includes(extension || "")
+      ["jpg", "jpeg", "png", "gif", "webp"].includes(extension ?? "")
     ) {
       return <FileImage className="size-4" />;
     }
@@ -83,7 +83,7 @@ const FileUpload = ({
   };
 
   const renderFileList = () => {
-    if (!value) return null;
+    if (value === undefined || value === null) return null;
 
     const files = Array.isArray(value) ? value : [value];
 
@@ -134,7 +134,7 @@ const FileUpload = ({
         <div
           className={cn(
             "cursor-pointer rounded-md border-2 border-dashed border-input p-4 text-center transition-colors hover:border-primary/50",
-            error && "border-destructive",
+            error !== undefined && "border-destructive",
           )}
           role="button"
           onClick={openFileDialog}
@@ -144,7 +144,9 @@ const FileUpload = ({
         </div>
       )}
       {renderFileList()}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error !== undefined && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
     </div>
   );
 };

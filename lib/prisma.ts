@@ -5,13 +5,13 @@ import { env } from "@/env";
 import { PrismaClient } from "../app/generated/prisma/client";
 
 const globalForPrisma = global as unknown as {
-  prisma: PrismaClient;
+  prisma?: PrismaClient;
 };
 const adapter = new PrismaPg({
   connectionString: env.DATABASE_URL,
 });
 const prisma =
-  globalForPrisma.prisma ||
+  globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
   });

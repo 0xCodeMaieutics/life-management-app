@@ -31,7 +31,7 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(data.error ?? "OCR failed");
       }
-      if (!data.text) {
+      if (data.text === undefined) {
         throw new Error("OCR returned no text");
       }
 
@@ -89,7 +89,7 @@ export default function Home() {
               {categorise.error.message}
             </p>
           ) : null}
-          {categorise.data ? (
+          {categorise.data !== undefined ? (
             <pre className="text-sm whitespace-pre-wrap">{categorise.data}</pre>
           ) : null}
         </div>
