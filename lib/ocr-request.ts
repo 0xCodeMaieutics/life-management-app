@@ -17,13 +17,10 @@ export const categoriseOcrFile = Effect.fn(function* (body: FormData) {
     catch: () => new Error("Failed to read OCR response"),
   });
 
-  let data: OcrResponse = {};
-  if (raw) {
-    data = yield* Effect.try({
-      try: () => JSON.parse(raw) as OcrResponse,
-      catch: () => new Error("OCR failed"),
-    });
-  }
+  const data = yield* Effect.try({
+    try: () => JSON.parse(raw) as OcrResponse,
+    catch: () => new Error("OCR failed"),
+  });
 
   if (!response.ok) {
     return yield* Effect.fail(new Error(data.error ?? "OCR failed"));
