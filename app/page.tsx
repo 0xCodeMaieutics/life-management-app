@@ -20,13 +20,11 @@ export default function Home() {
       });
 
       const raw = await response.text();
-      let data: { text?: string; error?: string } = {};
-      if (raw) {
-        try {
-          data = JSON.parse(raw) as { text?: string; error?: string };
-        } catch {
-          throw new Error("OCR failed");
-        }
+      let data: { text?: string; error?: string };
+      try {
+        data = JSON.parse(raw) as { text?: string; error?: string };
+      } catch {
+        throw new Error("OCR failed");
       }
       if (!response.ok) {
         throw new Error(data.error ?? "OCR failed");
