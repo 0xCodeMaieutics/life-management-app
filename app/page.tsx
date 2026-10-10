@@ -11,29 +11,34 @@ export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const categorise = useMutation({
     mutationFn: async (file: File) => {
-      const body = new FormData();
-      body.set("file", file);
+      const readFailedMessage = "Could not read this file. Please try again.";
+      let failureMessage = readFailedMessage;
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body,
-      });
-
-      const raw = await response.text();
-      let data: { text?: string; error?: string };
       try {
-        data = JSON.parse(raw) as { text?: string; error?: string };
+        const body = new FormData();
+        body.set("file", file);
+
+        const response = await fetch("/api/ocr", {
+          method: "POST",
+          body,
+        });
+        const data = JSON.parse(await response.text()) as {
+          text?: string;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          failureMessage = data.error ?? readFailedMessage;
+        } else if (!data.text) {
+          failureMessage = "OCR returned no text";
+        } else {
+          return data.text;
+        }
       } catch {
-        throw new Error("OCR failed");
-      }
-      if (!response.ok) {
-        throw new Error(data.error ?? "OCR failed");
-      }
-      if (!data.text) {
-        throw new Error("OCR returned no text");
+        failureMessage = readFailedMessage;
       }
 
-      return data.text;
+      throw new Error(failureMessage);
     },
   });
 
