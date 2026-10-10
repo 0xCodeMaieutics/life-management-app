@@ -1,41 +1,22 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { Effect } from "effect";
 import { FileText as FileIcon, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
+import { categoriseOcrFile } from "@/lib/ocr-request";
 
 export default function Home() {
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const categorise = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: (file: File) => {
       const body = new FormData();
       body.set("file", file);
 
-      const response = await fetch("/api/ocr", {
-        method: "POST",
-        body,
-      });
-
-      const raw = await response.text();
-      let data: { text?: string; error?: string } = {};
-      if (raw) {
-        try {
-          data = JSON.parse(raw) as { text?: string; error?: string };
-        } catch {
-          throw new Error("OCR failed");
-        }
-      }
-      if (!response.ok) {
-        throw new Error(data.error ?? "OCR failed");
-      }
-      if (!data.text) {
-        throw new Error("OCR returned no text");
-      }
-
-      return data.text;
+      return Effect.runPromise(categoriseOcrFile(body));
     },
   });
 
