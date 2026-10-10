@@ -46,6 +46,7 @@
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "oxlint-tailwindcss": "^1.14.0",
+    "oxlint-tsgolint": "^7.0.2004",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
