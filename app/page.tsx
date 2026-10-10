@@ -20,7 +20,7 @@ export default function Home() {
           body,
         });
         const raw = await response.text();
-        const data: { text?: string; error?: string } = JSON.parse(raw) as {
+        const data = JSON.parse(raw) as {
           text?: string;
           error?: string;
         };
