@@ -1,6 +1,8 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { Effect } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { FileText as FileIcon, X } from "lucide-react";
 import { useState } from "react";
 
@@ -14,29 +16,32 @@ export default function Home() {
       const body = new FormData();
       body.set("file", file);
 
-      try {
-        const response = await fetch("/api/ocr", {
-          method: "POST",
-          body,
-        });
-        const raw = await response.text();
-        const data = JSON.parse(raw) as {
-          text?: string;
-          error?: string;
-        };
+      const request = HttpClientRequest.post("/api/ocr").pipe(
+        HttpClientRequest.bodyFormData(body),
+      );
 
-        if (!response.ok) {
-          throw new Error();
-        }
+      return Effect.runPromise(
+        Effect.gen(function* () {
+          const response = yield* HttpClient.execute(request);
+          const data = (yield* response.json) as {
+            text?: string;
+            error?: string;
+          };
 
-        if (data.text === undefined) {
-          throw new Error();
-        }
+          if (response.status < 200 || response.status >= 300) {
+            return yield* Effect.fail(new Error());
+          }
 
-        return data.text;
-      } catch {
-        throw new Error("Request failed");
-      }
+          if (data.text === undefined) {
+            return yield* Effect.fail(new Error());
+          }
+
+          return data.text;
+        }).pipe(
+          Effect.provide(FetchHttpClient.layer),
+          Effect.mapError(() => new Error("Request failed")),
+        ),
+      );
     },
   });
 
