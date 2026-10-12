@@ -11,3 +11,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## References
 
 - For Clean Code rules, see docs/CLEAN_CODE.md
+- For security rules, see docs/SECURITY.md
