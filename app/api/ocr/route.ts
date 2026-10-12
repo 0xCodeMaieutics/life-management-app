@@ -18,6 +18,18 @@ const categorisationSchema = z.object({
   }),
 });
 
+const MAX_TITLE_LENGTH = 80;
+
+function generateTitle(text: string, fileName: string) {
+  const firstLine = text
+    .split("\n")
+    .map((line) => line.replace(/<[^>]*>|[#*_`>|]/g, "").trim())
+    .find((line) => line.length > 0);
+
+  const title = firstLine ?? fileName.replace(/\.[^.]+$/, "");
+  return title.slice(0, MAX_TITLE_LENGTH);
+}
+
 class InvalidFileError extends Data.TaggedError("InvalidFileError") {}
 
 class OcrError extends Data.TaggedError("OcrError")<{
@@ -122,7 +134,12 @@ export async function POST(request: Request) {
 
       yield* Effect.tryPromise({
         try: () =>
-          db.insert(matter).values({ key, documentContent: text, category }),
+          db.insert(matter).values({
+            key,
+            documentContent: text,
+            category,
+            title: generateTitle(text, file.name),
+          }),
         catch: (cause) => new DatabaseError({ cause }),
       });
 
