@@ -41,9 +41,6 @@ export async function POST(request: Request) {
         },
         catch: (cause) => new OcrError({ cause }),
       });
-      for (const page of ocrResponse.pages) {
-        console.log(page);
-      }
 
       const text = ocrResponse.pages.map((page) => page.markdown).join("\n\n");
       return Response.json({ text });
