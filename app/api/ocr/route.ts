@@ -49,14 +49,17 @@ export async function POST(request: Request) {
       return Response.json({ text });
     }).pipe(
       Effect.catchTags({
-        InvalidFileError: () =>
-          Effect.succeed(
-            Response.json({ error: "A PDF file is required" }, { status: 400 }),
-          ),
+        InvalidFileError: () => {
+          console.error("InvalidFileError");
+          return Effect.succeed(
+            Response.json({ error: "Bad request" }, { status: 400 }),
+          );
+        },
         OcrError: ({ cause }) => {
           const message = cause instanceof Error ? cause.message : "OCR failed";
+          console.error(message);
           return Effect.succeed(
-            Response.json({ error: message }, { status: 502 }),
+            Response.json({ error: "Internal server error" }, { status: 502 }),
           );
         },
       }),
