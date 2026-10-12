@@ -1,11 +1,17 @@
 import { Suspense } from "react";
 
+import { MatterAttachment } from "@/components/matter-attachment";
 import db from "@/lib/db";
 import { matter } from "@/lib/schema";
 
 async function MatterList() {
   const matters = await db
-    .select({ id: matter.id, title: matter.title, category: matter.category })
+    .select({
+      id: matter.id,
+      title: matter.title,
+      category: matter.category,
+      key: matter.key,
+    })
     .from(matter);
 
   if (matters.length === 0) {
@@ -14,14 +20,17 @@ async function MatterList() {
 
   return (
     <ul className="flex flex-col gap-y-2">
-      {matters.map(({ id, title, category }) => (
+      {matters.map(({ id, title, category, key }) => (
         <li
           key={id}
-          className="flex items-center justify-between rounded-md border p-2"
+          className="flex items-start justify-between gap-x-2 rounded-md border p-2"
         >
-          <span className="font-semibold">
-            {title === null || title === "" ? "Untitled" : title}
-          </span>
+          <div className="flex min-w-0 flex-col gap-y-2">
+            <span className="font-semibold">
+              {title === null || title === "" ? "Untitled" : title}
+            </span>
+            <MatterAttachment fileKey={key} />
+          </div>
           <span className="text-xs text-muted-foreground">{category}</span>
         </li>
       ))}
