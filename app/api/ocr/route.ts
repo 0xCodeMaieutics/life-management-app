@@ -3,7 +3,9 @@ import { Mistral } from "@mistralai/mistralai";
 import { Data, Effect } from "effect";
 
 import { env } from "@/env";
+import db from "@/lib/db";
 import s3 from "@/lib/s3";
+import { matter } from "@/lib/schema";
 
 const MODEL = "mistral-ocr-2512";
 
@@ -16,6 +18,11 @@ class OcrError extends Data.TaggedError("OcrError")<{
 class UploadError extends Data.TaggedError("UploadError")<{
   readonly cause: unknown;
 }> {}
+
+class DatabaseError extends Data.TaggedError("DatabaseError")<{
+  readonly cause: unknown;
+}> {}
+
 export async function POST(request: Request) {
   return Effect.runPromise(
     Effect.gen(function* () {
@@ -49,17 +56,24 @@ export async function POST(request: Request) {
 
       const text = ocrResponse.pages.map((page) => page.markdown).join("\n\n");
 
+      const key = `${crypto.randomUUID()}-${file.name}`;
+
       yield* Effect.tryPromise({
         try: async () =>
           s3.send(
             new PutObjectCommand({
               Bucket: env.S3_BUCKET,
-              Key: `${crypto.randomUUID()}-${file.name}`,
+              Key: key,
               Body: Buffer.from(await file.arrayBuffer()),
               ContentType: file.type,
             }),
           ),
         catch: (cause) => new UploadError({ cause }),
+      });
+
+      yield* Effect.tryPromise({
+        try: () => db.insert(matter).values({ key, documentContent: text }),
+        catch: (cause) => new DatabaseError({ cause }),
       });
 
       return Response.json({ text });
@@ -84,6 +98,14 @@ export async function POST(request: Request) {
           console.error(message);
           return Effect.succeed(
             Response.json({ error: "Internal server error" }, { status: 502 }),
+          );
+        },
+        DatabaseError: ({ cause }) => {
+          const message =
+            cause instanceof Error ? cause.message : "Database insert failed";
+          console.error(message);
+          return Effect.succeed(
+            Response.json({ error: "Internal server error" }, { status: 500 }),
           );
         },
       }),
