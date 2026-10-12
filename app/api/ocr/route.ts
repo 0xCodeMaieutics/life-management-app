@@ -1,13 +1,22 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { Mistral } from "@mistralai/mistralai";
 import { Data, Effect } from "effect";
+import * as z from "zod";
 
 import { env } from "@/env";
 import db from "@/lib/db";
 import s3 from "@/lib/s3";
-import { matter } from "@/lib/schema";
+import { matter, matterCategory } from "@/lib/schema";
 
 const MODEL = "mistral-ocr-2512";
+const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
+const TYPESAFE_MODEL = "jev-latest";
+
+const categorisationSchema = z.object({
+  answers: z.object({
+    category: z.object({ choice: z.enum(matterCategory.enumValues) }),
+  }),
+});
 
 class InvalidFileError extends Data.TaggedError("InvalidFileError") {}
 
@@ -16,6 +25,10 @@ class OcrError extends Data.TaggedError("OcrError")<{
 }> {}
 
 class UploadError extends Data.TaggedError("UploadError")<{
+  readonly cause: unknown;
+}> {}
+
+class CategorisationError extends Data.TaggedError("CategorisationError")<{
   readonly cause: unknown;
 }> {}
 
@@ -71,8 +84,45 @@ export async function POST(request: Request) {
         catch: (cause) => new UploadError({ cause }),
       });
 
+      const category = yield* Effect.tryPromise({
+        try: async () => {
+          const response = await fetch(TYPESAFE_URL, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${env.TYPESAFE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              state: text,
+              model: TYPESAFE_MODEL,
+              questions: {
+                category: {
+                  type: "choice",
+                  instructions: "Is this document a personal or work matter?",
+                  criteria: {
+                    personal:
+                      "Private life: health, family, home, finances, internet",
+                    work: "Job, employer, clients, business",
+                    unknown: "Neither clearly personal nor work",
+                  },
+                },
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`TypeSafe responded with ${response.status}`);
+          }
+
+          const result = categorisationSchema.parse(await response.json());
+          return result.answers.category.choice;
+        },
+        catch: (cause) => new CategorisationError({ cause }),
+      });
+
       yield* Effect.tryPromise({
-        try: () => db.insert(matter).values({ key, documentContent: text }),
+        try: () =>
+          db.insert(matter).values({ key, documentContent: text, category }),
         catch: (cause) => new DatabaseError({ cause }),
       });
 
@@ -95,6 +145,14 @@ export async function POST(request: Request) {
         UploadError: ({ cause }) => {
           const message =
             cause instanceof Error ? cause.message : "Upload failed";
+          console.error(message);
+          return Effect.succeed(
+            Response.json({ error: "Internal server error" }, { status: 502 }),
+          );
+        },
+        CategorisationError: ({ cause }) => {
+          const message =
+            cause instanceof Error ? cause.message : "Categorisation failed";
           console.error(message);
           return Effect.succeed(
             Response.json({ error: "Internal server error" }, { status: 502 }),
