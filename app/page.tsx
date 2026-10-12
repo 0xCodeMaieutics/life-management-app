@@ -39,10 +39,11 @@ export default function Home() {
   });
 
   return (
-    <div className="flex size-full flex-col items-center justify-center p-2">
+    <div className="flex flex-1 flex-col items-center justify-center gap-y-4 p-2">
+      <h1 className="text-lg font-semibold">Pick a matter</h1>
       {currentFile === null ? (
         <FileUpload
-          className="w-full"
+          className="w-full max-w-md"
           accept=".pdf"
           value={currentFile}
           onChange={(files) => {
@@ -57,7 +58,7 @@ export default function Home() {
           }}
         />
       ) : (
-        <div className="flex w-full flex-col gap-y-2">
+        <div className="flex w-full max-w-md flex-col gap-y-2">
           <div className="relative flex items-center gap-x-2 rounded-md border p-2">
             <FileIcon />
             <div className="flex flex-col gap-y-0.5">
