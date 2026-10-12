@@ -4,12 +4,14 @@ import { useMutation } from "@tanstack/react-query";
 import { Effect } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { FileText as FileIcon, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
 
 export default function Home() {
+  const router = useRouter();
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const categorise = useMutation({
     mutationFn: async (file: File) => {
@@ -23,26 +25,17 @@ export default function Home() {
       return Effect.runPromise(
         Effect.gen(function* () {
           const response = yield* HttpClient.execute(request);
-          const data = (yield* response.json) as {
-            text?: string;
-            error?: string;
-          };
 
           if (response.status < 200 || response.status >= 300) {
             return yield* Effect.fail(new Error());
           }
-
-          if (data.text === undefined) {
-            return yield* Effect.fail(new Error());
-          }
-
-          return data.text;
         }).pipe(
           Effect.provide(FetchHttpClient.layer),
           Effect.mapError(() => new Error("Request failed")),
         ),
       );
     },
+    onSuccess: () => router.push("/matter"),
   });
 
   return (
@@ -94,9 +87,6 @@ export default function Home() {
             <p className="text-sm text-destructive">
               {categorise.error.message}
             </p>
-          ) : null}
-          {categorise.data !== undefined ? (
-            <pre className="text-sm whitespace-pre-wrap">{categorise.data}</pre>
           ) : null}
         </div>
       )}
