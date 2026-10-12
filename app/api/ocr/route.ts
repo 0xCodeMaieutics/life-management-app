@@ -1,7 +1,9 @@
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { Mistral } from "@mistralai/mistralai";
 import { Data, Effect } from "effect";
 
 import { env } from "@/env";
+import s3 from "@/lib/s3";
 
 const MODEL = "mistral-ocr-2512";
 
@@ -11,6 +13,9 @@ class OcrError extends Data.TaggedError("OcrError")<{
   readonly cause: unknown;
 }> {}
 
+class UploadError extends Data.TaggedError("UploadError")<{
+  readonly cause: unknown;
+}> {}
 export async function POST(request: Request) {
   return Effect.runPromise(
     Effect.gen(function* () {
@@ -43,6 +48,20 @@ export async function POST(request: Request) {
       });
 
       const text = ocrResponse.pages.map((page) => page.markdown).join("\n\n");
+
+      yield* Effect.tryPromise({
+        try: async () =>
+          s3.send(
+            new PutObjectCommand({
+              Bucket: env.S3_BUCKET,
+              Key: `${crypto.randomUUID()}-${file.name}`,
+              Body: Buffer.from(await file.arrayBuffer()),
+              ContentType: file.type,
+            }),
+          ),
+        catch: (cause) => new UploadError({ cause }),
+      });
+
       return Response.json({ text });
     }).pipe(
       Effect.catchTags({
@@ -54,6 +73,14 @@ export async function POST(request: Request) {
         },
         OcrError: ({ cause }) => {
           const message = cause instanceof Error ? cause.message : "OCR failed";
+          console.error(message);
+          return Effect.succeed(
+            Response.json({ error: "Internal server error" }, { status: 502 }),
+          );
+        },
+        UploadError: ({ cause }) => {
+          const message =
+            cause instanceof Error ? cause.message : "Upload failed";
           console.error(message);
           return Effect.succeed(
             Response.json({ error: "Internal server error" }, { status: 502 }),
