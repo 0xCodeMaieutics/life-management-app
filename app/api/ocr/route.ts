@@ -143,7 +143,7 @@ export async function POST(request: Request) {
         catch: (cause) => new DatabaseError({ cause }),
       });
 
-      return Response.json({ text });
+      return new Response(null, { status: 201 });
     }).pipe(
       Effect.catchTags({
         InvalidFileError: () => {
