@@ -4,6 +4,7 @@ import * as z from "zod";
 export const env = createEnv({
   server: {
     MISTRAL_API_KEY: z.string().min(1),
+    TYPESAFE_API_KEY: z.string().min(1),
     DATABASE_URL: z.url(),
     S3_ENDPOINT: z.url(),
     S3_BUCKET: z.string().min(1),
