@@ -1,0 +1,62 @@
+import { eq } from "drizzle-orm";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import * as z from "zod";
+
+import { MatterAttachment } from "@/components/matter-attachment";
+import db from "@/lib/db";
+import { matter } from "@/lib/schema";
+
+async function MatterDetail({
+  params,
+}: Pick<PageProps<"/matter/[matterId]">, "params">) {
+  const { matterId } = await params;
+
+  if (!z.uuid().safeParse(matterId).success) {
+    notFound();
+  }
+
+  const [found] = await db
+    .select()
+    .from(matter)
+    .where(eq(matter.id, matterId))
+    .limit(1);
+
+  if (found === undefined) {
+    notFound();
+  }
+
+  const { title, category, key, documentContent } = found;
+
+  return (
+    <article className="flex flex-col gap-y-4">
+      <header className="flex items-start justify-between gap-x-2">
+        <h1 className="text-lg font-semibold">
+          {title === null || title === "" ? "Untitled" : title}
+        </h1>
+        <span className="text-xs text-muted-foreground">{category}</span>
+      </header>
+      <MatterAttachment fileKey={key} />
+      <pre className="text-sm whitespace-pre-wrap">{documentContent}</pre>
+    </article>
+  );
+}
+
+export default function MatterDetailPage(
+  props: PageProps<"/matter/[matterId]">,
+) {
+  return (
+    <div className="flex size-full flex-col gap-y-4 p-2">
+      <Link
+        href="/matter"
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        ← Matters
+      </Link>
+      <Suspense fallback={<p className="text-sm">Loading…</p>}>
+        <MatterDetail params={props.params} />
+      </Suspense>
+    </div>
+  );
+}
