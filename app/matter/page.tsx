@@ -44,7 +44,6 @@ async function MatterList() {
 export default function MatterPage() {
   return (
     <div className="flex size-full flex-col gap-y-4 p-2">
-      <h1 className="text-lg font-semibold">Matters</h1>
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <MatterList />
       </Suspense>
