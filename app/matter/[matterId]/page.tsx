@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import * as z from "zod";
 
 import { MatterAttachment } from "@/components/matter-attachment";
+import { MatterTitleForm } from "@/components/matter-title-form";
 import db from "@/lib/db";
 import { matter } from "@/lib/schema";
 
@@ -32,9 +33,7 @@ async function MatterDetail({
   return (
     <article className="flex flex-col gap-y-4">
       <header className="flex items-start justify-between gap-x-2">
-        <h1 className="text-lg font-semibold">
-          {title === null || title === "" ? "Untitled" : title}
-        </h1>
+        <MatterTitleForm matterId={matterId} title={title} />
         <span className="text-xs text-muted-foreground">{category}</span>
       </header>
       <MatterAttachment fileKey={key} />
