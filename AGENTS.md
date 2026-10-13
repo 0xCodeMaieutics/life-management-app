@@ -12,3 +12,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - For Clean Code rules, see docs/CLEAN_CODE.md
 - For security rules, see docs/SECURITY.md
+- For Typescript conventions, see docs/TYPESCRIPT.md
