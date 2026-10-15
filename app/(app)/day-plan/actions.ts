@@ -114,6 +114,15 @@ export async function deleteDayPlanItem(itemId: string) {
       }
 
       await tx.delete(dayPlanItem).where(eq(dayPlanItem.id, item.id));
+
+      const remaining = await tx
+        .select({ id: dayPlanItem.id })
+        .from(dayPlanItem)
+        .where(eq(dayPlanItem.dayPlanId, item.dayPlanId));
+
+      if (remaining.length === 0) {
+        await tx.delete(dayPlan).where(eq(dayPlan.id, item.dayPlanId));
+      }
     });
 
     revalidatePath("/day-plan");

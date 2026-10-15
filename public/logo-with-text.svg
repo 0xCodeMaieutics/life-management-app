@@ -1,0 +1,7 @@
+<svg width="200" height="35" viewBox="0 0 200 35" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect x="1" y="6" width="22" height="22" rx="3" stroke="#18181b" stroke-width="2"/>
+  <path d="M1 14h22" stroke="#18181b" stroke-width="2"/>
+  <path d="M7 4v4M17 4v4" stroke="#18181b" stroke-width="2" stroke-linecap="round"/>
+  <path d="M7 18h3v3H7z" fill="#18181b"/>
+  <text x="32" y="23" fill="#18181b" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Life management</text>
+</svg>

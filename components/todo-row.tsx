@@ -3,6 +3,8 @@
 import { Trash2 } from "lucide-react";
 import { useActionState, useTransition } from "react";
 
+import type { TodoTargetTime } from "@/lib/target-time";
+
 import {
   deleteTodo,
   updateTodo,
@@ -17,7 +19,7 @@ const initialState: TodoActionState = { errorMessage: null };
 export type TodoRowData = {
   id: string;
   title: string;
-  targetTime: string;
+  targetTime: TodoTargetTime;
 };
 
 export function TodoRow({ todo: initialTodo }: { todo: TodoRowData }) {

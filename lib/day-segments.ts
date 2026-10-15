@@ -8,7 +8,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { parseTargetTimeToMinutes } from "@/lib/target-time";
+import {
+  type DayPlanItemTargetTime,
+  type TargetTime,
+  parseTargetTimeToMinutes,
+} from "@/lib/target-time";
 
 export type TimedDaySegmentId =
   | "morning"
@@ -22,7 +26,8 @@ export type DaySegmentId = TimedDaySegmentId | "anytime";
 export type DaySegmentConfig = {
   id: DaySegmentId;
   label: string;
-  targetTime: string;
+  /** Segment start boundary (`HH:mm`); omitted for **Anytime**. */
+  targetTime?: TargetTime;
   icon: LucideIcon;
   iconClassName: string;
   nodeClassName: string;
@@ -74,7 +79,6 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
 export const ANYTIME_DAY_SEGMENT: DaySegmentConfig = {
   id: "anytime",
   label: "Anytime",
-  targetTime: "",
   icon: ListTodo,
   iconClassName: "text-muted-foreground",
   nodeClassName: "border-border bg-muted text-muted-foreground",
@@ -86,7 +90,7 @@ export const DAY_SEGMENT_DISPLAY_ORDER: DaySegmentConfig[] = [
 ];
 
 export function getTimedDaySegmentFromTargetTime(
-  targetTime: string,
+  targetTime: TargetTime,
 ): TimedDaySegmentId {
   const minutes = parseTargetTimeToMinutes(targetTime);
 
@@ -112,7 +116,7 @@ export function getTimedDaySegmentFromTargetTime(
 export type DayPlanItem = {
   id: string;
   title: string;
-  targetTime: string | null;
+  targetTime: DayPlanItemTargetTime;
   completed: boolean;
 };
 
