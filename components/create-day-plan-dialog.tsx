@@ -1,10 +1,11 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { createDayPlan } from "@/app/(app)/day-plan/actions";
+import { addTodosToDayPlan, createDayPlan } from "@/app/(app)/day-plan/actions";
 import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,20 +18,56 @@ import {
 } from "@/components/ui/dialog";
 import { formatTargetTimeForDisplay } from "@/lib/target-time";
 
+type DayPlanDialogMode = "create" | "add";
+
+const DIALOG_COPY: Record<
+  DayPlanDialogMode,
+  {
+    title: string;
+    description: (planDate: string) => string;
+    confirmLabel: string;
+    pendingLabel: string;
+    errorMessage: string;
+  }
+> = {
+  create: {
+    title: "Create day plan",
+    description: (planDate) =>
+      `Choose todos to include for ${planDate}. Uncheck any you do not want today.`,
+    confirmLabel: "Create day plan",
+    pendingLabel: "Creating…",
+    errorMessage: "Could not create day plan. Please try again.",
+  },
+  add: {
+    title: "Add todos",
+    description: (planDate) => `Choose todos to add to ${planDate}.`,
+    confirmLabel: "Add todos",
+    pendingLabel: "Adding…",
+    errorMessage: "Could not add todos. Please try again.",
+  },
+};
+
+function initialSelection(mode: DayPlanDialogMode, todos: TodoRowData[]) {
+  return new Set(mode === "create" ? todos.map((item) => item.id) : []);
+}
+
 export function CreateDayPlanDialog({
   planDate,
   todos,
   open,
   onOpenChange,
+  mode = "create",
 }: {
   planDate: string;
   todos: TodoRowData[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: DayPlanDialogMode;
 }) {
   const router = useRouter();
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(todos.map((item) => item.id)),
+  const copy = DIALOG_COPY[mode];
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() =>
+    initialSelection(mode, todos),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -49,21 +86,23 @@ export function CreateDayPlanDialog({
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
-      setSelectedIds(new Set(todos.map((item) => item.id)));
+      setSelectedIds(initialSelection(mode, todos));
       setErrorMessage(null);
     }
     onOpenChange(nextOpen);
   }
 
-  function handleCreate() {
+  function handleConfirm() {
     if (selectedIds.size === 0) {
       return;
     }
 
+    const submit = mode === "create" ? createDayPlan : addTodosToDayPlan;
+
     startTransition(async () => {
-      const result = await createDayPlan(planDate, [...selectedIds]);
+      const result = await submit(planDate, [...selectedIds]);
       if (!result.ok) {
-        setErrorMessage("Could not create day plan. Please try again.");
+        setErrorMessage(copy.errorMessage);
         return;
       }
       onOpenChange(false);
@@ -77,11 +116,8 @@ export function CreateDayPlanDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create day plan</DialogTitle>
-          <DialogDescription>
-            Choose todos to include for {planDate}. Uncheck any you do not want
-            today.
-          </DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description(planDate)}</DialogDescription>
         </DialogHeader>
         <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
           {todos.map((item) => (
@@ -114,8 +150,8 @@ export function CreateDayPlanDialog({
           >
             Cancel
           </Button>
-          <Button type="button" disabled={!canConfirm} onClick={handleCreate}>
-            {isPending ? "Creating…" : "Create day plan"}
+          <Button type="button" disabled={!canConfirm} onClick={handleConfirm}>
+            {isPending ? copy.pendingLabel : copy.confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -153,6 +189,46 @@ export function CreateDayPlanTrigger({
         </Button>
       </div>
       <CreateDayPlanDialog
+        planDate={planDate}
+        todos={todos}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
+  );
+}
+
+export function AddTodosToDayPlanTrigger({
+  planDate,
+  todos,
+}: {
+  planDate: string;
+  todos: TodoRowData[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [dialogKey, setDialogKey] = useState(0);
+
+  if (todos.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setDialogKey((key) => key + 1);
+          setOpen(true);
+        }}
+      >
+        <Plus />
+        Add todo
+      </Button>
+      <CreateDayPlanDialog
+        key={dialogKey}
+        mode="add"
         planDate={planDate}
         todos={todos}
         open={open}

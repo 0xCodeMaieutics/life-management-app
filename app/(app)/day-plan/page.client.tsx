@@ -4,7 +4,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { CreateDayPlanTrigger } from "@/components/create-day-plan-dialog";
+import {
+  AddTodosToDayPlanTrigger,
+  CreateDayPlanTrigger,
+} from "@/components/create-day-plan-dialog";
 import { DayPlanTimeline } from "@/components/day-plan-timeline";
 import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
@@ -103,7 +106,12 @@ export default function DayPlanPageClient({
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold">Day plan</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Day plan</h2>
+          {hasDayPlan ? (
+            <AddTodosToDayPlanTrigger planDate={date} todos={todos} />
+          ) : null}
+        </div>
         {hasDayPlan ? (
           <DayPlanTimeline items={items} />
         ) : (
