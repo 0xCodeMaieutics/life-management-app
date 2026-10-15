@@ -301,7 +301,10 @@ export async function updateDayPlanItemSchedule(
   }
 }
 
-export async function copyDayPlanItemToNthDay(itemId: string, dayOffset: number) {
+export async function copyDayPlanItemToNthDay(
+  itemId: string,
+  dayOffset: number,
+) {
   const parsed = z.uuid().safeParse(itemId);
   const offsetResult = copyDayPlanItemDayOffsetSchema.safeParse(dayOffset);
   if (!parsed.success || !offsetResult.success) {
