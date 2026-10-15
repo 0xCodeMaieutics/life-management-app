@@ -121,6 +121,10 @@ export type DayPlanItem = {
 };
 
 function compareDayPlanItems(a: DayPlanItem, b: DayPlanItem) {
+  if (a.completed !== b.completed) {
+    return a.completed ? 1 : -1;
+  }
+
   if (a.targetTime === null && b.targetTime === null) {
     return 0;
   }
