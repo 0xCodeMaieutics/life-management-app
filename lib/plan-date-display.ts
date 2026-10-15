@@ -8,5 +8,7 @@ export function formatPlanDateForDisplay(planDate: string) {
   const [year, month, day] = planDate.split("-").map(Number);
   const date = new Date(year, month - 1, day);
 
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+    date,
+  );
 }

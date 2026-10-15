@@ -2,10 +2,7 @@ import { eq, lte } from "drizzle-orm";
 
 import { formatDayPlanReminderMessage } from "@/lib/day-plan-reminder-message";
 import db from "@/lib/db";
-import {
-  computeRemindAt,
-  isRemindAtInFuture,
-} from "@/lib/remind-at";
+import { computeRemindAt, isRemindAtInFuture } from "@/lib/remind-at";
 import { dayPlan, dayPlanItem, dayPlanItemReminder } from "@/lib/schema";
 import { type TargetTime } from "@/lib/target-time";
 import {
@@ -31,7 +28,8 @@ export async function cancelDayPlanItemReminderByItemId(itemId: string) {
   const [row] = await db
     .select({
       id: dayPlanItemReminder.id,
-      telegramScheduledMessageId: dayPlanItemReminder.telegramScheduledMessageId,
+      telegramScheduledMessageId:
+        dayPlanItemReminder.telegramScheduledMessageId,
     })
     .from(dayPlanItemReminder)
     .where(eq(dayPlanItemReminder.dayPlanItemId, itemId))
@@ -71,7 +69,8 @@ export async function scheduleDayPlanItemReminder({
   const [existing] = await db
     .select({
       id: dayPlanItemReminder.id,
-      telegramScheduledMessageId: dayPlanItemReminder.telegramScheduledMessageId,
+      telegramScheduledMessageId:
+        dayPlanItemReminder.telegramScheduledMessageId,
     })
     .from(dayPlanItemReminder)
     .where(eq(dayPlanItemReminder.dayPlanItemId, itemId))
@@ -109,7 +108,8 @@ export async function rescheduleDayPlanItemReminderForPlanDate(
       id: dayPlanItemReminder.id,
       remindTime: dayPlanItemReminder.remindTime,
       timeZone: dayPlanItemReminder.timeZone,
-      telegramScheduledMessageId: dayPlanItemReminder.telegramScheduledMessageId,
+      telegramScheduledMessageId:
+        dayPlanItemReminder.telegramScheduledMessageId,
       title: dayPlanItem.title,
     })
     .from(dayPlanItemReminder)

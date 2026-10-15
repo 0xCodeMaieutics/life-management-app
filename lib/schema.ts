@@ -57,5 +57,7 @@ export const dayPlanItemReminder = pgTable("day_plan_item_reminder", {
   remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
   remindTime: text("remind_time").notNull().$type<TodoTargetTime>(),
   timeZone: text("time_zone").notNull(),
-  telegramScheduledMessageId: integer("telegram_scheduled_message_id").notNull(),
+  telegramScheduledMessageId: integer(
+    "telegram_scheduled_message_id",
+  ).notNull(),
 });
