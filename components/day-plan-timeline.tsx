@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckSquare, Square, Trash2 } from "lucide-react";
-import { useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
   deleteDayPlanItem,
@@ -17,6 +17,19 @@ import {
 import { formatTargetTimeForDisplay } from "@/lib/target-time";
 import { cn } from "@/lib/utils";
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
 export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
   const itemsByDaySegment = mapDayPlanItemsByDaySegment(items);
   const visibleSegments = DAY_SEGMENT_DISPLAY_ORDER.flatMap((segment) => {
@@ -26,12 +39,133 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
     }
     return [{ segment, items: segmentItems }];
   });
+  const orderedItems = visibleSegments.flatMap(({ items: segmentItems }) =>
+    segmentItems,
+  );
+
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isDeleting, startDelete] = useTransition();
+  const [isToggling, startToggle] = useTransition();
+
+  const clampIndex = useCallback(
+    (index: number) => Math.max(0, Math.min(index, orderedItems.length - 1)),
+    [orderedItems.length],
+  );
+
+  useEffect(() => {
+    if (selectedIndex === null) {
+      return;
+    }
+    if (orderedItems.length === 0) {
+      setSelectedIndex(null);
+      return;
+    }
+    if (selectedIndex >= orderedItems.length) {
+      setSelectedIndex(orderedItems.length - 1);
+    }
+  }, [orderedItems.length, selectedIndex]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (orderedItems.length === 0) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (selectedIndex !== null) {
+          event.preventDefault();
+          setSelectedIndex(null);
+        }
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((current) => {
+          if (current === null) {
+            return 0;
+          }
+          return clampIndex(current + 1);
+        });
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((current) => {
+          if (current === null) {
+            return orderedItems.length - 1;
+          }
+          return clampIndex(current - 1);
+        });
+        return;
+      }
+
+      if (
+        event.key === "Enter" &&
+        selectedIndex !== null &&
+        !isToggling &&
+        !isDeleting
+      ) {
+        event.preventDefault();
+        const item = orderedItems[selectedIndex];
+        if (item === undefined) {
+          return;
+        }
+        startToggle(async () => {
+          await setDayPlanItemCompleted(item.id, !item.completed);
+        });
+        return;
+      }
+
+      if (
+        (event.key === "Backspace" || event.key === "Delete") &&
+        selectedIndex !== null &&
+        !isDeleting
+      ) {
+        event.preventDefault();
+        const item = orderedItems[selectedIndex];
+        if (item === undefined) {
+          return;
+        }
+        const indexToRemove = selectedIndex;
+        startDelete(async () => {
+          const result = await deleteDayPlanItem(item.id);
+          if (result.ok) {
+            setSelectedIndex((current) => {
+              if (current === null) {
+                return null;
+              }
+              const nextLength = orderedItems.length - 1;
+              if (nextLength === 0) {
+                return null;
+              }
+              if (indexToRemove >= nextLength) {
+                return nextLength - 1;
+              }
+              return indexToRemove;
+            });
+          }
+        });
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [clampIndex, isDeleting, isToggling, orderedItems, selectedIndex]);
 
   if (visibleSegments.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">Nothing planned yet.</p>
     );
   }
+
+  const selectedId =
+    selectedIndex !== null ? orderedItems[selectedIndex]?.id : undefined;
 
   return (
     <div>
@@ -41,6 +175,7 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
           segment={segment}
           items={segmentItems}
           isLast={index === visibleSegments.length - 1}
+          selectedId={selectedId}
         />
       ))}
     </div>
@@ -51,10 +186,12 @@ function DayPlanSegmentSection({
   segment,
   items,
   isLast,
+  selectedId,
 }: {
   segment: DaySegmentConfig;
   items: DayPlanItem[];
   isLast: boolean;
+  selectedId?: string;
 }) {
   const Icon = segment.icon;
 
@@ -80,7 +217,11 @@ function DayPlanSegmentSection({
         </p>
         <div className="flex flex-col gap-3">
           {items.map((item) => (
-            <DayPlanItemRow key={item.id} item={item} />
+            <DayPlanItemRow
+              key={item.id}
+              item={item}
+              selected={item.id === selectedId}
+            />
           ))}
         </div>
       </div>
@@ -88,11 +229,22 @@ function DayPlanSegmentSection({
   );
 }
 
-function DayPlanItemRow({ item }: { item: DayPlanItem }) {
+function DayPlanItemRow({
+  item,
+  selected = false,
+}: {
+  item: DayPlanItem;
+  selected?: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex items-center justify-between gap-1.5">
+    <div
+      className={cn(
+        "flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 -mx-2 transition-colors",
+        selected && "border-primary/50 bg-muted/30",
+      )}
+    >
       <div className="flex flex-col">
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <button
