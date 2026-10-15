@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, Trash2 } from "lucide-react";
+import { CheckSquare, Square, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 
 import {
@@ -110,14 +110,11 @@ function DayPlanItemRow({ item }: { item: DayPlanItem }) {
               });
             }}
           >
-            <CheckSquare
-              className={cn(
-                "size-4 shrink-0",
-                item.completed
-                  ? "fill-primary stroke-primary"
-                  : "stroke-muted-foreground",
-              )}
-            />
+            {item.completed ? (
+              <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
+            ) : (
+              <Square className="size-4 shrink-0 stroke-muted-foreground" />
+            )}
           </button>
           <p
             className={cn(
