@@ -15,6 +15,13 @@
       "when": 1792055492006,
       "tag": "0001_peaceful_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792060000000,
+      "tag": "0002_day_plan_item_reminder",
+      "breakpoints": true
     }
   ]
 }

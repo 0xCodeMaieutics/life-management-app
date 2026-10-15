@@ -8,6 +8,10 @@ import {
   deletedDayPlanItemSchema,
   type DeletedDayPlanItem,
 } from "@/lib/day-plan-deleted-item";
+import {
+  cancelDayPlanItemReminderByItemId,
+  rescheduleDayPlanItemReminderForPlanDate,
+} from "@/lib/day-plan-reminders";
 import db from "@/lib/db";
 import { isValidPlanDateString } from "@/lib/plan-date";
 import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
@@ -193,6 +197,10 @@ export async function setDayPlanItemCompleted(
   }
 
   try {
+    if (completed) {
+      await cancelDayPlanItemReminderByItemId(parsed.data);
+    }
+
     await db
       .update(dayPlanItem)
       .set({ completed })
@@ -273,6 +281,16 @@ export async function updateDayPlanItemSchedule(
       return { ok: false as const };
     }
 
+    try {
+      await rescheduleDayPlanItemReminderForPlanDate(
+        idResult.data,
+        dateResult.data,
+      );
+    } catch (error) {
+      console.error(error);
+      return { ok: false as const };
+    }
+
     revalidatePath("/day-plan");
     return { ok: true as const };
   } catch (error) {
@@ -289,6 +307,8 @@ export async function deleteDayPlanItem(itemId: string) {
 
   try {
     let deleted: DeletedDayPlanItem | undefined;
+
+    await cancelDayPlanItemReminderByItemId(parsed.data);
 
     await db.transaction(async (tx) => {
       const [item] = await tx

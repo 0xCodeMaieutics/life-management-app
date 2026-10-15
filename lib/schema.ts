@@ -1,5 +1,6 @@
 import {
   boolean,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -45,4 +46,16 @@ export const dayPlanItem = pgTable("day_plan_item", {
   title: text().notNull(),
   targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: boolean().notNull().default(false),
+});
+
+export const dayPlanItemReminder = pgTable("day_plan_item_reminder", {
+  id: uuid().primaryKey().defaultRandom(),
+  dayPlanItemId: uuid("day_plan_item_id")
+    .notNull()
+    .unique()
+    .references(() => dayPlanItem.id, { onDelete: "cascade" }),
+  remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
+  remindTime: text("remind_time").notNull().$type<TodoTargetTime>(),
+  timeZone: text("time_zone").notNull(),
+  telegramScheduledMessageId: integer("telegram_scheduled_message_id").notNull(),
 });

@@ -14,6 +14,8 @@ import {
   parseTargetTimeToMinutes,
 } from "@/lib/target-time";
 
+export type { TargetTime };
+
 export type TimedDaySegmentId =
   | "morning"
   | "noon"
@@ -113,11 +115,17 @@ export function getTimedDaySegmentFromTargetTime(
   return "night";
 }
 
+export type DayPlanItemPendingReminder = {
+  remindAt: string;
+  remindTime: TargetTime;
+};
+
 export type DayPlanItem = {
   id: string;
   title: string;
   targetTime: DayPlanItemTargetTime;
   completed: boolean;
+  pendingReminder: DayPlanItemPendingReminder | null;
 };
 
 function compareDayPlanItems(a: DayPlanItem, b: DayPlanItem) {
