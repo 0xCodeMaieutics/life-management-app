@@ -42,7 +42,35 @@ export function TodoList({ todos }: { todos: TodoRowData[] }) {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (todos.length === 0 || isEditableTarget(event.target)) {
+      if (todos.length === 0) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        let handled = false;
+        const active = document.activeElement;
+        if (active instanceof HTMLInputElement) {
+          const isTodoInput = todos.some(
+            (todo) =>
+              active.id === `todo-title-${todo.id}` ||
+              active.id === `todo-time-${todo.id}`,
+          );
+          if (isTodoInput) {
+            active.blur();
+            handled = true;
+          }
+        }
+        if (selectedIndex !== null) {
+          setSelectedIndex(null);
+          handled = true;
+        }
+        if (handled) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
         return;
       }
 
@@ -65,6 +93,40 @@ export function TodoList({ todos }: { todos: TodoRowData[] }) {
           }
           return clampIndex(current - 1);
         });
+        return;
+      }
+
+      if (event.key === "Enter" && selectedIndex !== null) {
+        const todo = todos[selectedIndex];
+        if (todo === undefined) {
+          return;
+        }
+        const titleInput = document.getElementById(`todo-title-${todo.id}`);
+        if (titleInput instanceof HTMLInputElement) {
+          event.preventDefault();
+          titleInput.focus();
+          const end = titleInput.value.length;
+          titleInput.setSelectionRange(end, end);
+        }
+        return;
+      }
+
+      if (
+        (event.key === "t" || event.key === "T") &&
+        selectedIndex !== null &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        const todo = todos[selectedIndex];
+        if (todo === undefined) {
+          return;
+        }
+        const timeInput = document.getElementById(`todo-time-${todo.id}`);
+        if (timeInput instanceof HTMLInputElement) {
+          event.preventDefault();
+          timeInput.focus();
+        }
         return;
       }
 
