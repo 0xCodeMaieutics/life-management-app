@@ -3,14 +3,17 @@ import * as z from "zod";
 
 import { type TargetTime, targetTimeSchema } from "@/lib/target-time";
 
-export const ianaTimeZoneSchema = z.string().min(1).refine((value) => {
-  try {
-    Intl.DateTimeFormat(undefined, { timeZone: value });
-    return true;
-  } catch {
-    return false;
-  }
-});
+export const ianaTimeZoneSchema = z
+  .string()
+  .min(1)
+  .refine((value) => {
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: value });
+      return true;
+    } catch {
+      return false;
+    }
+  });
 
 export function computeRemindAt(
   planDate: string,

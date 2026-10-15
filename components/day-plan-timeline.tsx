@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Bell,
-  CalendarClock,
-  CheckSquare,
-  Square,
-  Trash2,
-} from "lucide-react";
+import { Bell, CalendarClock, CheckSquare, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
