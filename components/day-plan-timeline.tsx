@@ -4,6 +4,7 @@ import { Bell, CalendarClock, CheckSquare, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
+  copyDayPlanItemToNextDay,
   deleteDayPlanItem,
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
@@ -451,9 +452,19 @@ function DayPlanItemRow({
               Remind me
             </ContextMenuItem>
           )}
+          <ContextMenuItem
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                await copyDayPlanItemToNextDay(item.id);
+              });
+            }}
+          >
+            Copy on the next day
+          </ContextMenuItem>
           {hasPendingReminder ? (
             <>
-              {item.completed ? null : <ContextMenuSeparator />}
+              <ContextMenuSeparator />
               <ContextMenuItem
                 variant="destructive"
                 onClick={() => {

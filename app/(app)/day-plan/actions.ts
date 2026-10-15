@@ -13,7 +13,7 @@ import {
   rescheduleDayPlanItemReminderForPlanDate,
 } from "@/lib/day-plan-reminders";
 import db from "@/lib/db";
-import { isValidPlanDateString } from "@/lib/plan-date";
+import { isValidPlanDateString, shiftLocalDateString } from "@/lib/plan-date";
 import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
 import { dayPlanItemTargetTimeSchema } from "@/lib/target-time";
 
@@ -288,6 +288,72 @@ export async function updateDayPlanItemSchedule(
       );
     } catch (error) {
       console.error(error);
+      return { ok: false as const };
+    }
+
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const };
+  }
+}
+
+export async function copyDayPlanItemToNextDay(itemId: string) {
+  const parsed = z.uuid().safeParse(itemId);
+  if (!parsed.success) {
+    return { ok: false as const };
+  }
+
+  try {
+    let isCopied = false;
+
+    await db.transaction(async (tx) => {
+      const [item] = await tx
+        .select({
+          title: dayPlanItem.title,
+          targetTime: dayPlanItem.targetTime,
+          planDate: dayPlan.date,
+        })
+        .from(dayPlanItem)
+        .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
+        .where(eq(dayPlanItem.id, parsed.data))
+        .limit(1);
+
+      if (item === undefined) {
+        return;
+      }
+
+      const nextPlanDate = shiftLocalDateString(item.planDate, 1);
+
+      const [planForDate] = await tx
+        .select({ id: dayPlan.id })
+        .from(dayPlan)
+        .where(eq(dayPlan.date, nextPlanDate))
+        .limit(1);
+
+      let dayPlanId: string;
+      if (planForDate !== undefined) {
+        dayPlanId = planForDate.id;
+      } else {
+        const [createdPlan] = await tx
+          .insert(dayPlan)
+          .values({ date: nextPlanDate })
+          .returning({ id: dayPlan.id });
+        dayPlanId = createdPlan.id;
+      }
+
+      await tx.insert(dayPlanItem).values({
+        dayPlanId,
+        title: item.title,
+        targetTime: item.targetTime,
+        completed: false,
+      });
+
+      isCopied = true;
+    });
+
+    if (!isCopied) {
       return { ok: false as const };
     }
 
