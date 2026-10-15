@@ -16,6 +16,10 @@ export function shiftLocalDateString(dateString: string, days: number) {
   return getLocalDateString(date);
 }
 
+export function isPlanDateBeforeToday(planDate: string) {
+  return planDate < getLocalDateString();
+}
+
 export function isValidPlanDateString(value: string) {
   if (!PLAN_DATE_PATTERN.test(value)) {
     return false;

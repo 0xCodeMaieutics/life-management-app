@@ -22,6 +22,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
+  dayPlanItemCanScheduleReminder,
   dayPlanItemHasPendingReminder,
   dayPlanItemNeedsCompleteConfirmation,
 } from "@/lib/day-plan-item-reminder-ui";
@@ -358,6 +359,7 @@ function DayPlanItemRow({
   const [isPending, startTransition] = useTransition();
   const [remindOpen, setRemindOpen] = useState(false);
   const hasPendingReminder = dayPlanItemHasPendingReminder(item);
+  const canScheduleReminder = dayPlanItemCanScheduleReminder(item, planDate);
 
   return (
     <>
@@ -447,11 +449,11 @@ function DayPlanItemRow({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          {item.completed ? null : (
+          {canScheduleReminder ? (
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
               Remind me
             </ContextMenuItem>
-          )}
+          ) : null}
           <ContextMenuItem
             disabled={isPending}
             onClick={() => {
