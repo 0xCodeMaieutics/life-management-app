@@ -1,4 +1,11 @@
-import { pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const matterCategory = pgEnum("matter_category", [
   "personal",
@@ -12,4 +19,28 @@ export const matter = pgTable("matter", {
   key: text().notNull(),
   documentContent: text("document_content").notNull(),
   category: matterCategory(),
+});
+
+export const todo = pgTable("todo", {
+  id: uuid().primaryKey().defaultRandom(),
+  title: text().notNull(),
+  targetTime: text("target_time").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const dayPlan = pgTable("day_plan", {
+  id: uuid().primaryKey().defaultRandom(),
+  date: text().notNull().unique(),
+});
+
+export const dayPlanItem = pgTable("day_plan_item", {
+  id: uuid().primaryKey().defaultRandom(),
+  dayPlanId: uuid("day_plan_id")
+    .notNull()
+    .references(() => dayPlan.id, { onDelete: "cascade" }),
+  title: text().notNull(),
+  targetTime: text("target_time"),
+  completed: boolean().notNull().default(false),
 });
