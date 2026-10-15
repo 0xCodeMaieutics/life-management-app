@@ -109,7 +109,10 @@ export type DayPlanItemForGrouping = {
   completed: boolean;
 };
 
-function compareDayPlanItems(a: DayPlanItemForGrouping, b: DayPlanItemForGrouping) {
+function compareDayPlanItems(
+  a: DayPlanItemForGrouping,
+  b: DayPlanItemForGrouping,
+) {
   if (a.completed !== b.completed) {
     return a.completed ? 1 : -1;
   }

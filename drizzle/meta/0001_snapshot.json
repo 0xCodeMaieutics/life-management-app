@@ -29,9 +29,7 @@
         "day_plan_date_unique": {
           "name": "day_plan_date_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "date"
-          ]
+          "columns": ["date"]
         }
       },
       "policies": {},
@@ -81,12 +79,8 @@
           "name": "day_plan_item_day_plan_id_day_plan_id_fk",
           "tableFrom": "day_plan_item",
           "tableTo": "day_plan",
-          "columnsFrom": [
-            "day_plan_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["day_plan_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -186,11 +180,7 @@
     "public.matter_category": {
       "name": "matter_category",
       "schema": "public",
-      "values": [
-        "personal",
-        "work",
-        "unknown"
-      ]
+      "values": ["personal", "work", "unknown"]
     }
   },
   "schemas": {},

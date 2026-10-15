@@ -1,7 +1,7 @@
 "use client";
 
-import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { useTransition } from "react";
 
 import {
   deleteDayPlanItem,
@@ -23,7 +23,7 @@ export function DayPlanTimeline({
   const grouped = groupDayPlanItemsBySegment(items);
   const visibleSegments = DAY_SEGMENT_DISPLAY_ORDER.flatMap((segment) => {
     const segmentItems = grouped.get(segment.id);
-    return segmentItems?.length
+    return (segmentItems?.length ?? 0) > 0
       ? [{ segment, items: segmentItems }]
       : [];
   });
@@ -104,7 +104,7 @@ function DayPlanItemRow({ item }: { item: DayPlanItemForGrouping }) {
           >
             {item.title}
           </span>
-          {item.targetTime ? (
+          {item.targetTime !== null ? (
             <span className="text-xs text-muted-foreground">
               {item.targetTime}
             </span>

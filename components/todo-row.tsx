@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { useActionState, useTransition } from "react";
 
 import {
   deleteTodo,
@@ -56,7 +56,7 @@ export function TodoRow({ todo: initialTodo }: { todo: TodoRowData }) {
             {isPending ? "Saving…" : "Save"}
           </Button>
         </div>
-        {state.errorMessage ? (
+        {state.errorMessage !== null ? (
           <p className="text-sm text-destructive">{state.errorMessage}</p>
         ) : null}
       </form>

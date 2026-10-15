@@ -1,14 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { CreateDayPlanTrigger } from "@/components/create-day-plan-dialog";
 import { DayPlanTimeline } from "@/components/day-plan-timeline";
-import type { TodoRowData } from "@/components/todo-row";
+import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
-import type { DayPlanItemForGrouping } from "@/lib/day-segments";
 import { useLocalToday } from "@/hooks/use-local-today";
+import { type DayPlanItemForGrouping } from "@/lib/day-segments";
 import { shiftLocalDateString } from "@/lib/plan-date";
 
 export default function DayPlanPageClient({
@@ -66,8 +66,8 @@ export default function DayPlanPageClient({
         )}
       </div>
 
-      <section className="flex flex-col gap-4">
-        <h1 className="text-lg font-semibold">Day plan</h1>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Day plan</h2>
         {hasDayPlan ? (
           <DayPlanTimeline items={items} />
         ) : (

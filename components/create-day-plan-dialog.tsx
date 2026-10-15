@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { createDayPlan } from "@/app/(app)/day-plan/actions";
+import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { TodoRowData } from "@/components/todo-row";
 
 export function CreateDayPlanDialog({
   planDate,
@@ -102,7 +102,7 @@ export function CreateDayPlanDialog({
             </li>
           ))}
         </ul>
-        {errorMessage ? (
+        {errorMessage !== null ? (
           <p className="text-sm text-destructive">{errorMessage}</p>
         ) : null}
         <DialogFooter>
@@ -133,7 +133,8 @@ export function CreateDayPlanTrigger({
 
   if (todos.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 text-center">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">Nothing planned yet.</p>
         <p className="text-sm text-muted-foreground">
           Add a todo before you can create a day plan.
         </p>
@@ -144,9 +145,12 @@ export function CreateDayPlanTrigger({
 
   return (
     <>
-      <Button type="button" onClick={() => setOpen(true)}>
-        Create day plan
-      </Button>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">Nothing planned yet.</p>
+        <Button type="button" onClick={() => setOpen(true)}>
+          Create day plan
+        </Button>
+      </div>
       <CreateDayPlanDialog
         planDate={planDate}
         todos={todos}

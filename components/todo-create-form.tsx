@@ -16,7 +16,10 @@ export function TodoCreateForm() {
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 rounded-lg border p-4">
+    <form
+      action={formAction}
+      className="flex flex-col gap-4 rounded-lg border p-4"
+    >
       <h2 className="text-sm font-semibold">New todo</h2>
       <div className="flex flex-col gap-2">
         <Label htmlFor="todo-title">Title</Label>
@@ -30,14 +33,9 @@ export function TodoCreateForm() {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="todo-target-time">Target time</Label>
-        <Input
-          id="todo-target-time"
-          name="targetTime"
-          type="time"
-          required
-        />
+        <Input id="todo-target-time" name="targetTime" type="time" required />
       </div>
-      {state.errorMessage ? (
+      {state.errorMessage !== null ? (
         <p className="text-sm text-destructive">{state.errorMessage}</p>
       ) : null}
       <Button type="submit" disabled={isPending}>

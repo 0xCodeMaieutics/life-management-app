@@ -45,13 +45,11 @@ export async function updateTodo(
   _previousState: TodoActionState,
   formData: FormData,
 ): Promise<TodoActionState> {
-  const parsed = todoFieldsSchema
-    .extend({ id: z.uuid() })
-    .safeParse({
-      id: formData.get("id"),
-      title: formData.get("title"),
-      targetTime: formData.get("targetTime"),
-    });
+  const parsed = todoFieldsSchema.extend({ id: z.uuid() }).safeParse({
+    id: formData.get("id"),
+    title: formData.get("title"),
+    targetTime: formData.get("targetTime"),
+  });
 
   if (!parsed.success) {
     return { errorMessage: "Invalid todo" };
