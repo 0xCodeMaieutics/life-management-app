@@ -75,6 +75,65 @@ export async function createDayPlan(planDate: string, todoIds: string[]) {
   }
 }
 
+export type DayPlanItemActionState = { errorMessage: string | null };
+
+const MAX_TITLE_LENGTH = 200;
+
+export async function createDayPlanItem(
+  _previousState: DayPlanItemActionState,
+  formData: FormData,
+): Promise<DayPlanItemActionState> {
+  const targetTimeValue = formData.get("targetTime");
+  const parsed = z
+    .object({
+      planDate: planDateSchema,
+      title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+      targetTime: dayPlanItemTargetTimeSchema,
+    })
+    .safeParse({
+      planDate: formData.get("planDate"),
+      title: formData.get("title"),
+      targetTime: targetTimeValue === "" ? null : targetTimeValue,
+    });
+
+  if (!parsed.success) {
+    return { errorMessage: "Invalid day plan item" };
+  }
+
+  const { planDate, title, targetTime } = parsed.data;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [planForDate] = await tx
+        .select({ id: dayPlan.id })
+        .from(dayPlan)
+        .where(eq(dayPlan.date, planDate))
+        .limit(1);
+
+      let dayPlanId: string;
+      if (planForDate !== undefined) {
+        dayPlanId = planForDate.id;
+      } else {
+        const [createdPlan] = await tx
+          .insert(dayPlan)
+          .values({ date: planDate })
+          .returning({ id: dayPlan.id });
+        dayPlanId = createdPlan.id;
+      }
+
+      await tx
+        .insert(dayPlanItem)
+        .values({ dayPlanId, title, targetTime, completed: false });
+    });
+
+    revalidatePath("/day-plan");
+    return { errorMessage: null };
+  } catch (error) {
+    console.error(error);
+    return { errorMessage: "Could not create day plan item" };
+  }
+}
+
 export async function addTodosToDayPlan(planDate: string, todoIds: string[]) {
   const dateResult = planDateSchema.safeParse(planDate);
   const idsResult = z.array(z.uuid()).min(1).safeParse(todoIds);
