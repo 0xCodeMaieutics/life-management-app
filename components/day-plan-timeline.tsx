@@ -11,6 +11,7 @@ import {
 import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
 import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
+import { DayPlanItemCopyNthDayDialog } from "@/components/day-plan-item-copy-nth-day-dialog";
 import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
 import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
 import { Button } from "@/components/ui/button";
@@ -358,6 +359,7 @@ function DayPlanItemRow({
 }) {
   const [isPending, startTransition] = useTransition();
   const [remindOpen, setRemindOpen] = useState(false);
+  const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const hasPendingReminder = dayPlanItemHasPendingReminder(item);
   const canScheduleReminder = dayPlanItemCanScheduleReminder(item, planDate);
 
@@ -464,6 +466,12 @@ function DayPlanItemRow({
           >
             Copy on the next day
           </ContextMenuItem>
+          <ContextMenuItem
+            disabled={isPending}
+            onClick={() => setCopyNthDayOpen(true)}
+          >
+            Copy on the n-th day
+          </ContextMenuItem>
           {hasPendingReminder ? (
             <>
               <ContextMenuSeparator />
@@ -488,6 +496,14 @@ function DayPlanItemRow({
           planDate={planDate}
           open
           onOpenChange={setRemindOpen}
+        />
+      ) : null}
+      {copyNthDayOpen ? (
+        <DayPlanItemCopyNthDayDialog
+          key={`${item.id}-copy-nth`}
+          item={item}
+          open
+          onOpenChange={setCopyNthDayOpen}
         />
       ) : null}
     </>
