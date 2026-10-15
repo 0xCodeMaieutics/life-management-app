@@ -1,15 +1,10 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
-import { useActionState, useTransition } from "react";
+import { useActionState } from "react";
 
 import type { TodoTargetTime } from "@/lib/target-time";
 
-import {
-  deleteTodo,
-  updateTodo,
-  type TodoActionState,
-} from "@/app/(app)/todos/actions";
+import { updateTodo, type TodoActionState } from "@/app/(app)/todos/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,8 +29,6 @@ export function TodoRow({
     updateTodo,
     initialState,
   );
-  const [isDeleting, startDelete] = useTransition();
-
   return (
     <li
       className={cn(
@@ -74,23 +67,6 @@ export function TodoRow({
           <p className="text-sm text-destructive">{state.errorMessage}</p>
         ) : null}
       </form>
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-destructive"
-          disabled={isDeleting}
-          onClick={() => {
-            startDelete(async () => {
-              await deleteTodo(initialTodo.id);
-            });
-          }}
-        >
-          <Trash2 />
-          Delete
-        </Button>
-      </div>
     </li>
   );
 }
