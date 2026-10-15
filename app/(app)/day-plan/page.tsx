@@ -1,11 +1,38 @@
 import { asc, eq } from "drizzle-orm";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import DayPlanPageClient from "@/app/(app)/day-plan/page.client";
 import { DayPlanRedirectToToday } from "@/components/day-plan-redirect-to-today";
+import { expirePastDayPlanReminders } from "@/lib/day-plan-reminders";
+import { type DayPlanItem } from "@/lib/day-segments";
 import db from "@/lib/db";
 import { isValidPlanDateString } from "@/lib/plan-date";
-import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
+import { dayPlan, dayPlanItem, dayPlanItemReminder, todo } from "@/lib/schema";
+import { targetTimeSchema } from "@/lib/target-time";
+
+function mapPendingReminder(
+  remindAt: Date | null,
+  remindTime: string | null,
+): DayPlanItem["pendingReminder"] {
+  if (remindAt === null || remindTime === null) {
+    return null;
+  }
+
+  if (remindAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  const parsedTime = targetTimeSchema.safeParse(remindTime);
+  if (!parsedTime.success) {
+    return null;
+  }
+
+  return {
+    remindAt: remindAt.toISOString(),
+    remindTime: parsedTime.data,
+  };
+}
 
 async function DayPlanPageLoader({
   searchParams,
@@ -19,13 +46,16 @@ async function DayPlanPageLoader({
     return <DayPlanRedirectToToday />;
   }
 
+  await connection();
+  await expirePastDayPlanReminders();
+
   const [plan] = await db
     .select({ id: dayPlan.id })
     .from(dayPlan)
     .where(eq(dayPlan.date, planDate))
     .limit(1);
 
-  const items =
+  const itemRows =
     plan === undefined
       ? []
       : await db
@@ -34,9 +64,23 @@ async function DayPlanPageLoader({
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
+            remindAt: dayPlanItemReminder.remindAt,
+            remindTime: dayPlanItemReminder.remindTime,
           })
           .from(dayPlanItem)
+          .leftJoin(
+            dayPlanItemReminder,
+            eq(dayPlanItemReminder.dayPlanItemId, dayPlanItem.id),
+          )
           .where(eq(dayPlanItem.dayPlanId, plan.id));
+
+  const items = itemRows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    targetTime: row.targetTime,
+    completed: row.completed,
+    pendingReminder: mapPendingReminder(row.remindAt, row.remindTime),
+  }));
 
   const todos = await db
     .select({

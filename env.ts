@@ -13,6 +13,9 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["production", "development", "staging"])
       .default("development"),
+    TELEGRAM_API_ID: z.coerce.number().int().positive().optional(),
+    TELEGRAM_API_HASH: z.string().min(1).optional(),
+    TELEGRAM_SESSION_STRING: z.string().min(1).optional(),
   },
 
   /**

@@ -1,15 +1,35 @@
 "use client";
 
-import { CalendarClock, CheckSquare, Square, Trash2 } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  CheckSquare,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
   deleteDayPlanItem,
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
+import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
+import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
+import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
 import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  dayPlanItemHasPendingReminder,
+  dayPlanItemNeedsCompleteConfirmation,
+} from "@/lib/day-plan-item-reminder-ui";
 import {
   DAY_SEGMENT_DISPLAY_ORDER,
   mapDayPlanItemsByDaySegment,
@@ -55,6 +75,29 @@ export function DayPlanTimeline({
   const [isDeleting, startDelete] = useTransition();
   const [isToggling, startToggle] = useTransition();
   const [editingItem, setEditingItem] = useState<DayPlanItem | null>(null);
+  const [completeConfirmItem, setCompleteConfirmItem] =
+    useState<DayPlanItem | null>(null);
+
+  const requestToggleComplete = useCallback(
+    (item: DayPlanItem) => {
+      if (item.completed) {
+        startToggle(async () => {
+          await setDayPlanItemCompleted(item.id, false);
+        });
+        return;
+      }
+
+      if (dayPlanItemNeedsCompleteConfirmation(item)) {
+        setCompleteConfirmItem(item);
+        return;
+      }
+
+      startToggle(async () => {
+        await setDayPlanItemCompleted(item.id, true);
+      });
+    },
+    [startToggle],
+  );
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(index, orderedItems.length - 1)),
@@ -125,9 +168,7 @@ export function DayPlanTimeline({
         if (item === undefined) {
           return;
         }
-        startToggle(async () => {
-          await setDayPlanItemCompleted(item.id, !item.completed);
-        });
+        requestToggleComplete(item);
         return;
       }
 
@@ -172,6 +213,7 @@ export function DayPlanTimeline({
     isDeleting,
     isToggling,
     orderedItems,
+    requestToggleComplete,
     selectedIndex,
   ]);
 
@@ -202,8 +244,31 @@ export function DayPlanTimeline({
           selectedId={selectedId}
           onSelectItem={selectItem}
           onEditItem={setEditingItem}
+          planDate={planDate}
+          onRequestToggleComplete={requestToggleComplete}
         />
       ))}
+      {completeConfirmItem !== null ? (
+        <DayPlanCompleteConfirmDialog
+          itemTitle={completeConfirmItem.title}
+          open
+          isPending={isToggling}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCompleteConfirmItem(null);
+            }
+          }}
+          onConfirm={() => {
+            const item = completeConfirmItem;
+            startToggle(async () => {
+              const result = await setDayPlanItemCompleted(item.id, true);
+              if (result.ok) {
+                setCompleteConfirmItem(null);
+              }
+            });
+          }}
+        />
+      ) : null}
       {editingItem !== null ? (
         <DayPlanItemScheduleDialog
           key={editingItem.id}
@@ -228,6 +293,8 @@ function DayPlanSegmentSection({
   selectedId,
   onSelectItem,
   onEditItem,
+  planDate,
+  onRequestToggleComplete,
 }: {
   segment: DaySegmentConfig;
   items: DayPlanItem[];
@@ -235,6 +302,8 @@ function DayPlanSegmentSection({
   selectedId?: string;
   onSelectItem: (id: string) => void;
   onEditItem: (item: DayPlanItem) => void;
+  planDate: string;
+  onRequestToggleComplete: (item: DayPlanItem) => void;
 }) {
   const Icon = segment.icon;
 
@@ -264,8 +333,10 @@ function DayPlanSegmentSection({
               key={item.id}
               item={item}
               selected={item.id === selectedId}
+              planDate={planDate}
               onSelect={() => onSelectItem(item.id)}
               onEdit={() => onEditItem(item)}
+              onRequestToggleComplete={onRequestToggleComplete}
             />
           ))}
         </div>
@@ -276,92 +347,142 @@ function DayPlanSegmentSection({
 
 function DayPlanItemRow({
   item,
+  planDate,
   selected = false,
   onSelect,
   onEdit,
+  onRequestToggleComplete,
 }: {
   item: DayPlanItem;
+  planDate: string;
   selected?: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onRequestToggleComplete: (item: DayPlanItem) => void;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [remindOpen, setRemindOpen] = useState(false);
+  const hasPendingReminder = dayPlanItemHasPendingReminder(item);
 
   return (
-    <div
-      onClick={onSelect}
-      className={cn(
-        "-mx-2 flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
-        selected && "border-primary/50 bg-muted/30",
-      )}
-    >
-      <div className="flex flex-col">
-        <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <button
-            type="button"
-            className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
-            disabled={isPending}
-            aria-label={
-              item.completed
-                ? `Mark ${item.title} incomplete`
-                : `Mark ${item.title} complete`
-            }
-            onClick={() => {
-              startTransition(async () => {
-                await setDayPlanItemCompleted(item.id, !item.completed);
-              });
-            }}
-          >
-            {item.completed ? (
-              <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
-            ) : (
-              <Square className="size-4 shrink-0 stroke-muted-foreground" />
-            )}
-          </button>
-          <p
-            className={cn(
-              "text-sm leading-tight font-medium",
-              item.completed && "text-muted-foreground line-through",
-            )}
-          >
-            {item.title}
-          </p>
-        </div>
-        {item.targetTime !== null ? (
-          <span className="ml-6 text-xs leading-tight text-muted-foreground">
-            {formatTargetTimeForDisplay(item.targetTime)}
-          </span>
-        ) : null}
-      </div>
-      <div className="flex shrink-0 items-center">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`Change date and time of ${item.title}`}
-          disabled={isPending}
-          onClick={onEdit}
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger
+          className={cn(
+            "-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
+            selected && "border-primary/50 bg-muted/30",
+          )}
+          onClick={onSelect}
         >
-          <CalendarClock />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`Delete ${item.title}`}
-          disabled={isPending}
-          onClick={() => {
-            startTransition(async () => {
-              const result = await deleteDayPlanItem(item.id);
-              if (result.ok) {
-                showDayPlanItemDeletedToast(result.deleted);
-              }
-            });
-          }}
-        >
-          <Trash2 />
-        </Button>
-      </div>
-    </div>
+          <div className="flex flex-col">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+              <button
+                type="button"
+                className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
+                disabled={isPending}
+                aria-label={
+                  item.completed
+                    ? `Mark ${item.title} incomplete`
+                    : `Mark ${item.title} complete`
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRequestToggleComplete(item);
+                }}
+              >
+                {item.completed ? (
+                  <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
+                ) : (
+                  <Square className="size-4 shrink-0 stroke-muted-foreground" />
+                )}
+              </button>
+              <p
+                className={cn(
+                  "text-sm leading-tight font-medium",
+                  item.completed && "text-muted-foreground line-through",
+                )}
+              >
+                {item.title}
+              </p>
+              {hasPendingReminder ? (
+                <Bell
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                  aria-label="Reminder scheduled"
+                />
+              ) : null}
+            </div>
+            {item.targetTime !== null ? (
+              <span className="ml-6 text-xs leading-tight text-muted-foreground">
+                {formatTargetTimeForDisplay(item.targetTime)}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Change date and time of ${item.title}`}
+              disabled={isPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+            >
+              <CalendarClock />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label={`Delete ${item.title}`}
+              disabled={isPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                startTransition(async () => {
+                  const result = await deleteDayPlanItem(item.id);
+                  if (result.ok) {
+                    showDayPlanItemDeletedToast(result.deleted);
+                  }
+                });
+              }}
+            >
+              <Trash2 />
+            </Button>
+          </div>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          {item.completed ? null : (
+            <ContextMenuItem onClick={() => setRemindOpen(true)}>
+              Remind me
+            </ContextMenuItem>
+          )}
+          {hasPendingReminder ? (
+            <>
+              {item.completed ? null : <ContextMenuSeparator />}
+              <ContextMenuItem
+                variant="destructive"
+                onClick={() => {
+                  startTransition(async () => {
+                    await cancelDayPlanItemReminder(item.id);
+                  });
+                }}
+              >
+                Cancel reminder
+              </ContextMenuItem>
+            </>
+          ) : null}
+        </ContextMenuContent>
+      </ContextMenu>
+      {remindOpen ? (
+        <DayPlanItemRemindDialog
+          key={item.id}
+          item={item}
+          planDate={planDate}
+          open
+          onOpenChange={setRemindOpen}
+        />
+      ) : null}
+    </>
   );
 }
