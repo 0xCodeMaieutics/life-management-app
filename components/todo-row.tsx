@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import type { TodoTargetTime } from "@/lib/target-time";
 
@@ -29,6 +29,14 @@ export function TodoRow({
     updateTodo,
     initialState,
   );
+  const [title, setTitle] = useState(initialTodo.title);
+  const [targetTime, setTargetTime] = useState(initialTodo.targetTime);
+
+  useEffect(() => {
+    setTitle(initialTodo.title);
+    setTargetTime(initialTodo.targetTime);
+  }, [initialTodo.title, initialTodo.targetTime]);
+
   return (
     <li
       className={cn(
@@ -46,7 +54,8 @@ export function TodoRow({
               name="title"
               required
               maxLength={200}
-              defaultValue={initialTodo.title}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -56,7 +65,8 @@ export function TodoRow({
               name="targetTime"
               type="time"
               required
-              defaultValue={initialTodo.targetTime}
+              value={targetTime}
+              onChange={(event) => setTargetTime(event.target.value)}
             />
           </div>
           <Button type="submit" disabled={isPending} className="sm:mb-0.5">
