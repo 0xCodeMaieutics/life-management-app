@@ -21,9 +21,11 @@ export type TodoRowData = {
 export function TodoRow({
   todo: initialTodo,
   selected = false,
+  onSelect,
 }: {
   todo: TodoRowData;
   selected?: boolean;
+  onSelect: () => void;
 }) {
   const [state, formAction, isPending] = useActionState(
     updateTodo,
@@ -39,6 +41,7 @@ export function TodoRow({
 
   return (
     <li
+      onClick={onSelect}
       className={cn(
         "flex flex-col gap-3 rounded-lg border p-4 transition-colors",
         selected && "border-primary/50",

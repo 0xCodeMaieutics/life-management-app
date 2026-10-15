@@ -169,7 +169,12 @@ export function TodoList({ todos }: { todos: TodoRowData[] }) {
   return (
     <ul className="flex flex-col gap-4">
       {todos.map((row, index) => (
-        <TodoRow key={row.id} todo={row} selected={selectedIndex === index} />
+        <TodoRow
+          key={row.id}
+          todo={row}
+          selected={selectedIndex === index}
+          onSelect={() => setSelectedIndex(index)}
+        />
       ))}
     </ul>
   );
