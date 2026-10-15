@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const initialState: TodoActionState = { errorMessage: null };
 
@@ -22,7 +23,13 @@ export type TodoRowData = {
   targetTime: TodoTargetTime;
 };
 
-export function TodoRow({ todo: initialTodo }: { todo: TodoRowData }) {
+export function TodoRow({
+  todo: initialTodo,
+  selected = false,
+}: {
+  todo: TodoRowData;
+  selected?: boolean;
+}) {
   const [state, formAction, isPending] = useActionState(
     updateTodo,
     initialState,
@@ -30,7 +37,12 @@ export function TodoRow({ todo: initialTodo }: { todo: TodoRowData }) {
   const [isDeleting, startDelete] = useTransition();
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border p-4">
+    <li
+      className={cn(
+        "flex flex-col gap-3 rounded-lg border p-4 transition-colors",
+        selected && "border-primary/50",
+      )}
+    >
       <form action={formAction} className="flex flex-col gap-3">
         <input type="hidden" name="id" value={initialTodo.id} />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
