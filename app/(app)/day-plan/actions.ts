@@ -4,6 +4,10 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import * as z from "zod";
 
+import {
+  deletedDayPlanItemSchema,
+  type DeletedDayPlanItem,
+} from "@/lib/day-plan-deleted-item";
 import db from "@/lib/db";
 import { isValidPlanDateString } from "@/lib/plan-date";
 import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
@@ -99,19 +103,38 @@ export async function deleteDayPlanItem(itemId: string) {
   }
 
   try {
+    let deleted: DeletedDayPlanItem | undefined;
+
     await db.transaction(async (tx) => {
       const [item] = await tx
         .select({
           id: dayPlanItem.id,
           dayPlanId: dayPlanItem.dayPlanId,
+          planDate: dayPlan.date,
+          title: dayPlanItem.title,
+          targetTime: dayPlanItem.targetTime,
+          completed: dayPlanItem.completed,
         })
         .from(dayPlanItem)
+        .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
         .where(eq(dayPlanItem.id, parsed.data))
         .limit(1);
 
       if (item === undefined) {
         return;
       }
+
+      const snapshot = deletedDayPlanItemSchema.safeParse({
+        id: item.id,
+        planDate: item.planDate,
+        title: item.title,
+        targetTime: item.targetTime,
+        completed: item.completed,
+      });
+      if (!snapshot.success) {
+        return;
+      }
+      deleted = snapshot.data;
 
       await tx.delete(dayPlanItem).where(eq(dayPlanItem.id, item.id));
 
@@ -123,6 +146,64 @@ export async function deleteDayPlanItem(itemId: string) {
       if (remaining.length === 0) {
         await tx.delete(dayPlan).where(eq(dayPlan.id, item.dayPlanId));
       }
+    });
+
+    if (deleted === undefined) {
+      return { ok: false as const };
+    }
+
+    revalidatePath("/day-plan");
+    return { ok: true as const, deleted };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const };
+  }
+}
+
+export async function restoreDayPlanItem(deleted: DeletedDayPlanItem) {
+  const parsed = deletedDayPlanItemSchema.safeParse(deleted);
+  if (!parsed.success) {
+    return { ok: false as const };
+  }
+
+  const snapshot = parsed.data;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [existingItem] = await tx
+        .select({ id: dayPlanItem.id })
+        .from(dayPlanItem)
+        .where(eq(dayPlanItem.id, snapshot.id))
+        .limit(1);
+
+      if (existingItem !== undefined) {
+        throw new Error("item already exists");
+      }
+
+      const [planForDate] = await tx
+        .select({ id: dayPlan.id })
+        .from(dayPlan)
+        .where(eq(dayPlan.date, snapshot.planDate))
+        .limit(1);
+
+      let dayPlanId: string;
+      if (planForDate !== undefined) {
+        dayPlanId = planForDate.id;
+      } else {
+        const [createdPlan] = await tx
+          .insert(dayPlan)
+          .values({ date: snapshot.planDate })
+          .returning({ id: dayPlan.id });
+        dayPlanId = createdPlan.id;
+      }
+
+      await tx.insert(dayPlanItem).values({
+        id: snapshot.id,
+        dayPlanId,
+        title: snapshot.title,
+        targetTime: snapshot.targetTime,
+        completed: snapshot.completed,
+      });
     });
 
     revalidatePath("/day-plan");

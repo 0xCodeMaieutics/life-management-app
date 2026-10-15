@@ -7,6 +7,7 @@ import {
   deleteDayPlanItem,
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
+import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
 import { Button } from "@/components/ui/button";
 import {
   DAY_SEGMENT_DISPLAY_ORDER,
@@ -39,8 +40,8 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
     }
     return [{ segment, items: segmentItems }];
   });
-  const orderedItems = visibleSegments.flatMap(({ items: segmentItems }) =>
-    segmentItems,
+  const orderedItems = visibleSegments.flatMap(
+    ({ items: segmentItems }) => segmentItems,
   );
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -136,6 +137,7 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
         startDelete(async () => {
           const result = await deleteDayPlanItem(item.id);
           if (result.ok) {
+            showDayPlanItemDeletedToast(result.deleted);
             setSelectedIndex((current) => {
               if (current === null) {
                 return null;
@@ -241,7 +243,7 @@ function DayPlanItemRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 -mx-2 transition-colors",
+        "-mx-2 flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
         selected && "border-primary/50 bg-muted/30",
       )}
     >
@@ -291,7 +293,10 @@ function DayPlanItemRow({
         disabled={isPending}
         onClick={() => {
           startTransition(async () => {
-            await deleteDayPlanItem(item.id);
+            const result = await deleteDayPlanItem(item.id);
+            if (result.ok) {
+              showDayPlanItemDeletedToast(result.deleted);
+            }
           });
         }}
       >
