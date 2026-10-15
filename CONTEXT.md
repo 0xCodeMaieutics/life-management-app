@@ -12,7 +12,7 @@ A dated plan for what to do on a specific calendar day, made up of day plan item
 _Avoid_: Diary
 
 **Day plan item**:
-One entry on a day plan: title, optional target time, and whether it is completed for that day. The completion flag is stored in code as `completed`. Values are copied from todos when the item is created; later todo edits do not change existing day plan items. On an existing day plan, the user can mark items complete or incomplete and remove items from that plan. Completed items stay in their day segment but sort below incomplete items in that segment. Archiving day plan items is not in the first release.
+One entry on a day plan: title, optional target time, and whether it is completed for that day. The completion flag is stored in code as `completed`. Values are copied from todos when the item is created; later todo edits do not change existing day plan items. On an existing day plan, the user can mark items complete or incomplete and remove items from that plan. Completed items stay in place within their day segment (order does not change when toggling complete). Archiving day plan items is not in the first release.
 _Code name_: `DayPlanItem` (e.g. table `day_plan_item`).
 _Avoid_: DayPlanTodo
 

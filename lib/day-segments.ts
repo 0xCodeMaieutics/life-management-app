@@ -22,6 +22,7 @@ export type DaySegmentId = TimedDaySegmentId | "anytime";
 export type DaySegmentConfig = {
   id: DaySegmentId;
   label: string;
+  beginTime: string;
   icon: LucideIcon;
   iconClassName: string;
   nodeClassName: string;
@@ -31,6 +32,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
   {
     id: "morning",
     label: "Morning",
+    beginTime: "05:00",
     icon: Sunrise,
     iconClassName: "text-amber-500",
     nodeClassName: "border-amber-200 bg-amber-50 text-amber-500",
@@ -38,6 +40,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
   {
     id: "noon",
     label: "Noon",
+    beginTime: "11:00",
     icon: Sun,
     iconClassName: "text-yellow-500",
     nodeClassName: "border-yellow-200 bg-yellow-50 text-yellow-500",
@@ -45,6 +48,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
   {
     id: "afternoon",
     label: "Afternoon",
+    beginTime: "14:00",
     icon: CloudSun,
     iconClassName: "text-sky-500",
     nodeClassName: "border-sky-200 bg-sky-50 text-sky-500",
@@ -52,6 +56,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
   {
     id: "evening",
     label: "Evening",
+    beginTime: "17:00",
     icon: Sunset,
     iconClassName: "text-orange-500",
     nodeClassName: "border-orange-200 bg-orange-50 text-orange-500",
@@ -59,6 +64,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
   {
     id: "night",
     label: "Night",
+    beginTime: "21:00",
     icon: Moon,
     iconClassName: "text-indigo-400",
     nodeClassName: "border-indigo-200 bg-indigo-50 text-indigo-400",
@@ -68,6 +74,7 @@ export const TIMED_DAY_SEGMENTS: DaySegmentConfig[] = [
 export const ANYTIME_DAY_SEGMENT: DaySegmentConfig = {
   id: "anytime",
   label: "Anytime",
+  beginTime: "",
   icon: ListTodo,
   iconClassName: "text-muted-foreground",
   nodeClassName: "border-border bg-muted text-muted-foreground",
@@ -113,10 +120,6 @@ function compareDayPlanItems(
   a: DayPlanItemForGrouping,
   b: DayPlanItemForGrouping,
 ) {
-  if (a.completed !== b.completed) {
-    return a.completed ? 1 : -1;
-  }
-
   if (a.targetTime === null && b.targetTime === null) {
     return 0;
   }

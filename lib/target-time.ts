@@ -31,5 +31,12 @@ export function parseTargetTimeToMinutes(targetTime: string) {
 }
 
 export function formatTargetTimeForDisplay(targetTime: string) {
-  return targetTime;
+  const [hours, minutes] = targetTime.split(":").map(Number);
+  const date = new Date(2000, 0, 1, hours, minutes);
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
 }

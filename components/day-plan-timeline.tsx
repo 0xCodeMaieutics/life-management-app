@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { CheckSquare, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 
 import {
@@ -12,7 +12,9 @@ import {
   DAY_SEGMENT_DISPLAY_ORDER,
   groupDayPlanItemsBySegment,
   type DayPlanItemForGrouping,
+  type DaySegmentConfig,
 } from "@/lib/day-segments";
+import { formatTargetTimeForDisplay } from "@/lib/target-time";
 import { cn } from "@/lib/utils";
 
 export function DayPlanTimeline({
@@ -23,52 +25,69 @@ export function DayPlanTimeline({
   const grouped = groupDayPlanItemsBySegment(items);
   const visibleSegments = DAY_SEGMENT_DISPLAY_ORDER.flatMap((segment) => {
     const segmentItems = grouped.get(segment.id);
-    return (segmentItems?.length ?? 0) > 0
-      ? [{ segment, items: segmentItems }]
-      : [];
+    if (segmentItems === undefined || segmentItems.length === 0) {
+      return [];
+    }
+    return [{ segment, items: segmentItems }];
   });
 
   if (visibleSegments.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No items on this plan.</p>
+      <p className="text-sm text-muted-foreground">Nothing planned yet.</p>
     );
   }
 
   return (
     <div>
-      {visibleSegments.map(({ segment, items: segmentItems }, index) => {
-        const Icon = segment.icon;
-        const isLast = index === visibleSegments.length - 1;
+      {visibleSegments.map(({ segment, items: segmentItems }, index) => (
+        <DayPlanSegmentSection
+          key={segment.id}
+          segment={segment}
+          items={segmentItems}
+          isLast={index === visibleSegments.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
 
-        return (
-          <div key={segment.id} className="relative flex gap-2 pb-6 last:pb-0">
-            {!isLast ? (
-              <div
-                className="absolute top-8 bottom-0 left-4 w-px -translate-x-1/2 bg-border"
-                aria-hidden
-              />
-            ) : null}
-            <div
-              className={cn(
-                "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border",
-                segment.nodeClassName,
-              )}
-            >
-              <Icon className={cn("size-4", segment.iconClassName)} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
-              <p className="text-sm font-semibold text-muted-foreground">
-                {segment.label}
-              </p>
-              <ul className="flex flex-col gap-3">
-                {segmentItems.map((item) => (
-                  <DayPlanItemRow key={item.id} item={item} />
-                ))}
-              </ul>
-            </div>
-          </div>
-        );
-      })}
+function DayPlanSegmentSection({
+  segment,
+  items,
+  isLast,
+}: {
+  segment: DaySegmentConfig;
+  items: DayPlanItemForGrouping[];
+  isLast: boolean;
+}) {
+  const Icon = segment.icon;
+
+  return (
+    <div className="relative flex gap-2 pb-6 last:pb-0">
+      {!isLast ? (
+        <div
+          className="absolute top-8 bottom-0 left-4 w-px -translate-x-1/2 bg-border"
+          aria-hidden
+        />
+      ) : null}
+      <div
+        className={cn(
+          "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border",
+          segment.nodeClassName,
+        )}
+      >
+        <Icon className="size-4" />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2 pt-1">
+        <p className="text-sm font-semibold text-muted-foreground">
+          {segment.label}
+        </p>
+        <div className="flex flex-col gap-3">
+          {items.map((item) => (
+            <DayPlanItemRow key={item.id} item={item} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -77,45 +96,53 @@ function DayPlanItemRow({ item }: { item: DayPlanItemForGrouping }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <li
-      className={cn(
-        "flex items-center justify-between gap-2 rounded-md border p-2",
-        item.completed && "opacity-70",
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-start gap-2">
-        <input
-          type="checkbox"
-          className="mt-1 size-4 rounded border-input"
-          checked={item.completed}
-          disabled={isPending}
-          onChange={(event) => {
-            startTransition(async () => {
-              await setDayPlanItemCompleted(item.id, event.target.checked);
-            });
-          }}
-        />
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span
+    <div className="flex items-center justify-between gap-1.5">
+      <div className="flex flex-col">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <button
+            type="button"
+            className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={isPending}
+            aria-label={
+              item.completed
+                ? `Mark ${item.title} incomplete`
+                : `Mark ${item.title} complete`
+            }
+            onClick={() => {
+              startTransition(async () => {
+                await setDayPlanItemCompleted(item.id, !item.completed);
+              });
+            }}
+          >
+            <CheckSquare
+              className={cn(
+                "size-4 shrink-0",
+                item.completed
+                  ? "fill-primary stroke-primary"
+                  : "stroke-muted-foreground",
+              )}
+            />
+          </button>
+          <p
             className={cn(
-              "text-sm font-medium",
+              "text-sm leading-tight font-medium",
               item.completed && "text-muted-foreground line-through",
             )}
           >
             {item.title}
-          </span>
-          {item.targetTime !== null ? (
-            <span className="text-xs text-muted-foreground">
-              {item.targetTime}
-            </span>
-          ) : null}
+          </p>
         </div>
+        {item.targetTime !== null ? (
+          <span className="ml-6 text-xs leading-tight text-muted-foreground">
+            {formatTargetTimeForDisplay(item.targetTime)}
+          </span>
+        ) : null}
       </div>
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        aria-label={`Remove ${item.title}`}
+        aria-label={`Delete ${item.title}`}
         disabled={isPending}
         onClick={() => {
           startTransition(async () => {
@@ -125,6 +152,6 @@ function DayPlanItemRow({ item }: { item: DayPlanItemForGrouping }) {
       >
         <Trash2 />
       </Button>
-    </li>
+    </div>
   );
 }
