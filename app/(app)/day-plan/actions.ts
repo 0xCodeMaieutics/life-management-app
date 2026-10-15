@@ -19,6 +19,8 @@ import { dayPlanItemTargetTimeSchema } from "@/lib/target-time";
 
 const planDateSchema = z.string().refine(isValidPlanDateString);
 
+const copyDayPlanItemDayOffsetSchema = z.number().int().min(1).max(120);
+
 export async function createDayPlan(planDate: string, todoIds: string[]) {
   const dateResult = planDateSchema.safeParse(planDate);
   const idsResult = z.array(z.uuid()).min(1).safeParse(todoIds);
@@ -299,9 +301,10 @@ export async function updateDayPlanItemSchedule(
   }
 }
 
-export async function copyDayPlanItemToNextDay(itemId: string) {
+export async function copyDayPlanItemToNthDay(itemId: string, dayOffset: number) {
   const parsed = z.uuid().safeParse(itemId);
-  if (!parsed.success) {
+  const offsetResult = copyDayPlanItemDayOffsetSchema.safeParse(dayOffset);
+  if (!parsed.success || !offsetResult.success) {
     return { ok: false as const };
   }
 
@@ -324,12 +327,15 @@ export async function copyDayPlanItemToNextDay(itemId: string) {
         return;
       }
 
-      const nextPlanDate = shiftLocalDateString(item.planDate, 1);
+      const targetPlanDate = shiftLocalDateString(
+        item.planDate,
+        offsetResult.data,
+      );
 
       const [planForDate] = await tx
         .select({ id: dayPlan.id })
         .from(dayPlan)
-        .where(eq(dayPlan.date, nextPlanDate))
+        .where(eq(dayPlan.date, targetPlanDate))
         .limit(1);
 
       let dayPlanId: string;
@@ -338,7 +344,7 @@ export async function copyDayPlanItemToNextDay(itemId: string) {
       } else {
         const [createdPlan] = await tx
           .insert(dayPlan)
-          .values({ date: nextPlanDate })
+          .values({ date: targetPlanDate })
           .returning({ id: dayPlan.id });
         dayPlanId = createdPlan.id;
       }
@@ -363,6 +369,10 @@ export async function copyDayPlanItemToNextDay(itemId: string) {
     console.error(error);
     return { ok: false as const };
   }
+}
+
+export async function copyDayPlanItemToNextDay(itemId: string) {
+  return copyDayPlanItemToNthDay(itemId, 1);
 }
 
 export async function deleteDayPlanItem(itemId: string) {
