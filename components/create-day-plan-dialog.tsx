@@ -224,7 +224,7 @@ export function AddTodosToDayPlanTrigger({
         }}
       >
         <Plus />
-        Add todo
+        Import todo
       </Button>
       <CreateDayPlanDialog
         key={dialogKey}
