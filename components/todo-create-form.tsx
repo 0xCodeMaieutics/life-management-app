@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 
 import { createTodo, type TodoActionState } from "@/app/(app)/todos/actions";
+import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +20,7 @@ const initialState: TodoActionState = { errorMessage: null };
 export function TodoCreateForm() {
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [targetTime, setTargetTime] = useState("");
   const [state, formAction, isPending] = useActionState(
     async (previousState: TodoActionState, formData: FormData) => {
       const result = await createTodo(previousState, formData);
@@ -33,6 +35,7 @@ export function TodoCreateForm() {
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setFormKey((key) => key + 1);
+      setTargetTime("");
     }
     setOpen(nextOpen);
   }
@@ -85,6 +88,12 @@ export function TodoCreateForm() {
                 name="targetTime"
                 type="time"
                 required
+                value={targetTime}
+                onChange={(event) => setTargetTime(event.target.value)}
+              />
+              <TargetTimeDaySegmentPicker
+                targetTime={targetTime}
+                onTargetTimeChange={setTargetTime}
               />
             </div>
             {state.errorMessage !== null ? (
