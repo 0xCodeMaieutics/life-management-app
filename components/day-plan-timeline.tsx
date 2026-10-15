@@ -169,6 +169,13 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
   const selectedId =
     selectedIndex !== null ? orderedItems[selectedIndex]?.id : undefined;
 
+  function selectItem(id: string) {
+    const index = orderedItems.findIndex((item) => item.id === id);
+    if (index !== -1) {
+      setSelectedIndex(index);
+    }
+  }
+
   return (
     <div>
       {visibleSegments.map(({ segment, items: segmentItems }, index) => (
@@ -178,6 +185,7 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
           items={segmentItems}
           isLast={index === visibleSegments.length - 1}
           selectedId={selectedId}
+          onSelectItem={selectItem}
         />
       ))}
     </div>
@@ -189,11 +197,13 @@ function DayPlanSegmentSection({
   items,
   isLast,
   selectedId,
+  onSelectItem,
 }: {
   segment: DaySegmentConfig;
   items: DayPlanItem[];
   isLast: boolean;
   selectedId?: string;
+  onSelectItem: (id: string) => void;
 }) {
   const Icon = segment.icon;
 
@@ -223,6 +233,7 @@ function DayPlanSegmentSection({
               key={item.id}
               item={item}
               selected={item.id === selectedId}
+              onSelect={() => onSelectItem(item.id)}
             />
           ))}
         </div>
@@ -234,14 +245,17 @@ function DayPlanSegmentSection({
 function DayPlanItemRow({
   item,
   selected = false,
+  onSelect,
 }: {
   item: DayPlanItem;
   selected?: boolean;
+  onSelect: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
   return (
     <div
+      onClick={onSelect}
       className={cn(
         "-mx-2 flex items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
         selected && "border-primary/50 bg-muted/30",
