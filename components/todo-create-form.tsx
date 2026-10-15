@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { createTodo, type TodoActionState } from "@/app/(app)/todos/actions";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,19 @@ export function TodoCreateForm() {
     }
     setOpen(nextOpen);
   }
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "n" || !(event.metaKey || event.ctrlKey)) {
+        return;
+      }
+      event.preventDefault();
+      handleOpenChange(!open);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   return (
     <>
