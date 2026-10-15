@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { CreateDayPlanTrigger } from "@/components/create-day-plan-dialog";
 import { DayPlanTimeline } from "@/components/day-plan-timeline";
@@ -10,6 +11,19 @@ import { Button } from "@/components/ui/button";
 import { useLocalToday } from "@/hooks/use-local-today";
 import { type DayPlanItem } from "@/lib/day-segments";
 import { shiftLocalDateString } from "@/lib/plan-date";
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
 
 export default function DayPlanPageClient({
   date,
@@ -25,6 +39,28 @@ export default function DayPlanPageClient({
   const router = useRouter();
   const today = useLocalToday();
   const isToday = today !== null && date === today;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        router.push(`/day-plan?date=${shiftLocalDateString(date, -1)}`);
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        router.push(`/day-plan?date=${shiftLocalDateString(date, 1)}`);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [date, router]);
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6">
