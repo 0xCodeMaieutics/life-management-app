@@ -19,7 +19,7 @@ async function TodoList() {
   if (todos.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        No todos yet. Add one above to use in day plans.
+        No todos yet. Add a todo to use in day plans.
       </p>
     );
   }
@@ -36,7 +36,6 @@ async function TodoList() {
 export default function TodosPage() {
   return (
     <main className="flex flex-1 flex-col gap-6 p-6">
-      <h1 className="text-lg font-semibold">Todos</h1>
       <TodoCreateForm />
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <TodoList />
