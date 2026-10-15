@@ -113,7 +113,7 @@ export default function DayPlanPageClient({
           ) : null}
         </div>
         {hasDayPlan ? (
-          <DayPlanTimeline items={items} />
+          <DayPlanTimeline items={items} planDate={date} />
         ) : (
           <CreateDayPlanTrigger planDate={date} todos={todos} />
         )}

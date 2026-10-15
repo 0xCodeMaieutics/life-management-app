@@ -11,6 +11,7 @@ import {
 import db from "@/lib/db";
 import { isValidPlanDateString } from "@/lib/plan-date";
 import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
+import { dayPlanItemTargetTimeSchema } from "@/lib/target-time";
 
 const planDateSchema = z.string().refine(isValidPlanDateString);
 
@@ -137,6 +138,82 @@ export async function setDayPlanItemCompleted(
       .update(dayPlanItem)
       .set({ completed })
       .where(eq(dayPlanItem.id, parsed.data));
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const };
+  }
+}
+
+export async function updateDayPlanItemSchedule(
+  itemId: string,
+  planDate: string,
+  targetTime: string | null,
+) {
+  const idResult = z.uuid().safeParse(itemId);
+  const dateResult = planDateSchema.safeParse(planDate);
+  const timeResult = dayPlanItemTargetTimeSchema.safeParse(targetTime);
+
+  if (!idResult.success || !dateResult.success || !timeResult.success) {
+    return { ok: false as const };
+  }
+
+  try {
+    let isUpdated = false;
+
+    await db.transaction(async (tx) => {
+      const [item] = await tx
+        .select({ dayPlanId: dayPlanItem.dayPlanId })
+        .from(dayPlanItem)
+        .where(eq(dayPlanItem.id, idResult.data))
+        .limit(1);
+
+      if (item === undefined) {
+        return;
+      }
+
+      const [planForDate] = await tx
+        .select({ id: dayPlan.id })
+        .from(dayPlan)
+        .where(eq(dayPlan.date, dateResult.data))
+        .limit(1);
+
+      let dayPlanId: string;
+      if (planForDate !== undefined) {
+        dayPlanId = planForDate.id;
+      } else {
+        const [createdPlan] = await tx
+          .insert(dayPlan)
+          .values({ date: dateResult.data })
+          .returning({ id: dayPlan.id });
+        dayPlanId = createdPlan.id;
+      }
+
+      await tx
+        .update(dayPlanItem)
+        .set({ dayPlanId, targetTime: timeResult.data })
+        .where(eq(dayPlanItem.id, idResult.data));
+
+      if (dayPlanId !== item.dayPlanId) {
+        const remaining = await tx
+          .select({ id: dayPlanItem.id })
+          .from(dayPlanItem)
+          .where(eq(dayPlanItem.dayPlanId, item.dayPlanId))
+          .limit(1);
+
+        if (remaining.length === 0) {
+          await tx.delete(dayPlan).where(eq(dayPlan.id, item.dayPlanId));
+        }
+      }
+
+      isUpdated = true;
+    });
+
+    if (!isUpdated) {
+      return { ok: false as const };
+    }
+
     revalidatePath("/day-plan");
     return { ok: true as const };
   } catch (error) {

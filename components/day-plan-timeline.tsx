@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, Square, Trash2 } from "lucide-react";
+import { CalendarClock, CheckSquare, Square, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
@@ -8,6 +8,7 @@ import {
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
+import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DAY_SEGMENT_DISPLAY_ORDER,
@@ -31,7 +32,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
+export function DayPlanTimeline({
+  items,
+  planDate,
+}: {
+  items: DayPlanItem[];
+  planDate: string;
+}) {
   const itemsByDaySegment = mapDayPlanItemsByDaySegment(items);
   const visibleSegments = DAY_SEGMENT_DISPLAY_ORDER.flatMap((segment) => {
     const segmentItems = itemsByDaySegment.get(segment.id);
@@ -47,6 +54,7 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isDeleting, startDelete] = useTransition();
   const [isToggling, startToggle] = useTransition();
+  const [editingItem, setEditingItem] = useState<DayPlanItem | null>(null);
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(index, orderedItems.length - 1)),
@@ -68,7 +76,7 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (orderedItems.length === 0) {
+      if (orderedItems.length === 0 || editingItem !== null) {
         return;
       }
 
@@ -158,7 +166,14 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clampIndex, isDeleting, isToggling, orderedItems, selectedIndex]);
+  }, [
+    clampIndex,
+    editingItem,
+    isDeleting,
+    isToggling,
+    orderedItems,
+    selectedIndex,
+  ]);
 
   if (visibleSegments.length === 0) {
     return (
@@ -186,8 +201,22 @@ export function DayPlanTimeline({ items }: { items: DayPlanItem[] }) {
           isLast={index === visibleSegments.length - 1}
           selectedId={selectedId}
           onSelectItem={selectItem}
+          onEditItem={setEditingItem}
         />
       ))}
+      {editingItem !== null ? (
+        <DayPlanItemScheduleDialog
+          key={editingItem.id}
+          item={editingItem}
+          planDate={planDate}
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditingItem(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -198,12 +227,14 @@ function DayPlanSegmentSection({
   isLast,
   selectedId,
   onSelectItem,
+  onEditItem,
 }: {
   segment: DaySegmentConfig;
   items: DayPlanItem[];
   isLast: boolean;
   selectedId?: string;
   onSelectItem: (id: string) => void;
+  onEditItem: (item: DayPlanItem) => void;
 }) {
   const Icon = segment.icon;
 
@@ -234,6 +265,7 @@ function DayPlanSegmentSection({
               item={item}
               selected={item.id === selectedId}
               onSelect={() => onSelectItem(item.id)}
+              onEdit={() => onEditItem(item)}
             />
           ))}
         </div>
@@ -246,10 +278,12 @@ function DayPlanItemRow({
   item,
   selected = false,
   onSelect,
+  onEdit,
 }: {
   item: DayPlanItem;
   selected?: boolean;
   onSelect: () => void;
+  onEdit: () => void;
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -299,23 +333,35 @@ function DayPlanItemRow({
           </span>
         ) : null}
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={`Delete ${item.title}`}
-        disabled={isPending}
-        onClick={() => {
-          startTransition(async () => {
-            const result = await deleteDayPlanItem(item.id);
-            if (result.ok) {
-              showDayPlanItemDeletedToast(result.deleted);
-            }
-          });
-        }}
-      >
-        <Trash2 />
-      </Button>
+      <div className="flex shrink-0 items-center">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Change date and time of ${item.title}`}
+          disabled={isPending}
+          onClick={onEdit}
+        >
+          <CalendarClock />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Delete ${item.title}`}
+          disabled={isPending}
+          onClick={() => {
+            startTransition(async () => {
+              const result = await deleteDayPlanItem(item.id);
+              if (result.ok) {
+                showDayPlanItemDeletedToast(result.deleted);
+              }
+            });
+          }}
+        >
+          <Trash2 />
+        </Button>
+      </div>
     </div>
   );
 }
