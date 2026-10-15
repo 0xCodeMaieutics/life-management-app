@@ -7,6 +7,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { DayPlanItemTargetTime, TodoTargetTime } from "@/lib/target-time";
+
 export const matterCategory = pgEnum("matter_category", [
   "personal",
   "work",
@@ -24,7 +26,7 @@ export const matter = pgTable("matter", {
 export const todo = pgTable("todo", {
   id: uuid().primaryKey().defaultRandom(),
   title: text().notNull(),
-  targetTime: text("target_time").notNull(),
+  targetTime: text("target_time").notNull().$type<TodoTargetTime>(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -41,6 +43,6 @@ export const dayPlanItem = pgTable("day_plan_item", {
     .notNull()
     .references(() => dayPlan.id, { onDelete: "cascade" }),
   title: text().notNull(),
-  targetTime: text("target_time"),
+  targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: boolean().notNull().default(false),
 });
