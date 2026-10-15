@@ -46,7 +46,7 @@ export default function MatterDetailPage(
   props: PageProps<"/matter/[matterId]">,
 ) {
   return (
-    <div className="flex size-full flex-col gap-y-4 p-2">
+    <div className="flex flex-1 flex-col gap-y-4 p-6">
       <Link
         href="/matter"
         className="text-sm text-muted-foreground hover:underline"

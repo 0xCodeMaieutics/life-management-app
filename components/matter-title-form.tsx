@@ -7,7 +7,7 @@ import { useActionState, useState } from "react";
 import {
   updateMatterTitle,
   type UpdateTitleState,
-} from "@/app/matter/[matterId]/actions";
+} from "@/app/(app)/matter/[matterId]/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
