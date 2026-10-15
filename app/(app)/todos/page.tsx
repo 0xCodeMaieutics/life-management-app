@@ -2,11 +2,11 @@ import { asc } from "drizzle-orm";
 import { Suspense } from "react";
 
 import { TodoCreateForm } from "@/components/todo-create-form";
-import { TodoRow } from "@/components/todo-row";
+import { TodoList } from "@/components/todo-list";
 import db from "@/lib/db";
 import { todo } from "@/lib/schema";
 
-async function TodoList() {
+async function TodoListSection() {
   const todos = await db
     .select({
       id: todo.id,
@@ -24,13 +24,7 @@ async function TodoList() {
     );
   }
 
-  return (
-    <ul className="flex flex-col gap-4">
-      {todos.map((row) => (
-        <TodoRow key={row.id} todo={row} />
-      ))}
-    </ul>
-  );
+  return <TodoList todos={todos} />;
 }
 
 export default function TodosPage() {
@@ -38,7 +32,7 @@ export default function TodosPage() {
     <main className="flex flex-1 flex-col gap-6 p-6">
       <TodoCreateForm />
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
-        <TodoList />
+        <TodoListSection />
       </Suspense>
     </main>
   );
