@@ -74,6 +74,55 @@ export async function createDayPlan(planDate: string, todoIds: string[]) {
   }
 }
 
+export async function addTodosToDayPlan(planDate: string, todoIds: string[]) {
+  const dateResult = planDateSchema.safeParse(planDate);
+  const idsResult = z.array(z.uuid()).min(1).safeParse(todoIds);
+
+  if (!dateResult.success || !idsResult.success) {
+    return { ok: false as const, error: "invalid" as const };
+  }
+
+  try {
+    const [plan] = await db
+      .select({ id: dayPlan.id })
+      .from(dayPlan)
+      .where(eq(dayPlan.date, dateResult.data))
+      .limit(1);
+
+    if (plan === undefined) {
+      return { ok: false as const, error: "missing" as const };
+    }
+
+    const selectedTodos = await db
+      .select({
+        title: todo.title,
+        targetTime: todo.targetTime,
+      })
+      .from(todo)
+      .where(inArray(todo.id, idsResult.data))
+      .orderBy(asc(todo.createdAt));
+
+    if (selectedTodos.length === 0) {
+      return { ok: false as const, error: "invalid" as const };
+    }
+
+    await db.insert(dayPlanItem).values(
+      selectedTodos.map((row) => ({
+        dayPlanId: plan.id,
+        title: row.title,
+        targetTime: row.targetTime,
+        completed: false,
+      })),
+    );
+
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const, error: "failed" as const };
+  }
+}
+
 export async function setDayPlanItemCompleted(
   itemId: string,
   completed: boolean,
