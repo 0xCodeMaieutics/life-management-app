@@ -14,7 +14,7 @@ import {
 } from "@/lib/day-plan-reminders";
 import db from "@/lib/db";
 import { isValidPlanDateString, shiftLocalDateString } from "@/lib/plan-date";
-import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
+import { dayPlan, dayPlanItem, dayPlanItemSteps, todo } from "@/lib/schema";
 import {
   dayPlanItemTargetTimeSchema,
   targetTimeSchema,
@@ -179,11 +179,19 @@ export async function createCompletedStepsDayPlanItem(
         dayPlanId = createdPlan.id;
       }
 
-      await tx.insert(dayPlanItem).values({
-        dayPlanId,
-        title,
-        targetTime: timeResult.data,
-        completed: true,
+      const [createdItem] = await tx
+        .insert(dayPlanItem)
+        .values({
+          dayPlanId,
+          title,
+          targetTime: timeResult.data,
+          completed: true,
+        })
+        .returning({ id: dayPlanItem.id });
+
+      await tx.insert(dayPlanItemSteps).values({
+        dayPlanItemId: createdItem.id,
+        steps: stepsResult.data,
       });
     });
 
