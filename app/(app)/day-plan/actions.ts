@@ -158,7 +158,7 @@ export async function createCompletedStepsDayPlanItem(
     return { ok: false as const, error: "invalid" as const };
   }
 
-  const title = `👣 Walk ${stepsResult.data} steps`;
+  const title = `Walk ${stepsResult.data} steps`;
 
   try {
     await db.transaction(async (tx) => {
