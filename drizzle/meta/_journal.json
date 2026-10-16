@@ -29,6 +29,13 @@
       "when": 1792130807748,
       "tag": "0003_day_plan_item_steps",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792153403417,
+      "tag": "0004_day_plan_item_cancelled",
+      "breakpoints": true
     }
   ]
 }

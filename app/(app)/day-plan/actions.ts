@@ -277,7 +277,7 @@ export async function setDayPlanItemCompleted(
 
     await db
       .update(dayPlanItem)
-      .set({ completed })
+      .set(completed ? { completed: true, cancelled: false } : { completed })
       .where(eq(dayPlanItem.id, parsed.data));
     revalidatePath("/day-plan");
     return { ok: true as const };
@@ -363,6 +363,46 @@ export async function updateDayPlanItemSchedule(
     } catch (error) {
       console.error(error);
       return { ok: false as const };
+    }
+
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const };
+  }
+}
+
+export async function setDayPlanItemCancelled(
+  itemId: string,
+  cancelled: boolean,
+) {
+  const parsed = z.uuid().safeParse(itemId);
+  if (!parsed.success) {
+    return { ok: false as const };
+  }
+
+  try {
+    const [stepsLog] = await db
+      .select({ id: dayPlanItemSteps.id })
+      .from(dayPlanItemSteps)
+      .where(eq(dayPlanItemSteps.dayPlanItemId, parsed.data))
+      .limit(1);
+    if (stepsLog !== undefined) {
+      return { ok: false as const };
+    }
+
+    if (cancelled) {
+      await cancelDayPlanItemReminderByItemId(parsed.data);
+      await db
+        .update(dayPlanItem)
+        .set({ cancelled: true, completed: false })
+        .where(eq(dayPlanItem.id, parsed.data));
+    } else {
+      await db
+        .update(dayPlanItem)
+        .set({ cancelled: false })
+        .where(eq(dayPlanItem.id, parsed.data));
     }
 
     revalidatePath("/day-plan");
@@ -516,6 +556,7 @@ export async function deleteDayPlanItem(itemId: string) {
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
           completed: dayPlanItem.completed,
+          cancelled: dayPlanItem.cancelled,
         })
         .from(dayPlanItem)
         .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
@@ -532,6 +573,7 @@ export async function deleteDayPlanItem(itemId: string) {
         title: item.title,
         targetTime: item.targetTime,
         completed: item.completed,
+        cancelled: item.cancelled,
       });
       if (!snapshot.success) {
         return;
@@ -605,6 +647,7 @@ export async function restoreDayPlanItem(deleted: DeletedDayPlanItem) {
         title: snapshot.title,
         targetTime: snapshot.targetTime,
         completed: snapshot.completed,
+        cancelled: snapshot.cancelled,
       });
     });
 

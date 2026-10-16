@@ -125,13 +125,25 @@ export type DayPlanItem = {
   title: string;
   targetTime: DayPlanItemTargetTime;
   completed: boolean;
+  cancelled: boolean;
   isStepsLog: boolean;
   pendingReminder: DayPlanItemPendingReminder | null;
 };
 
+function dayPlanItemSortRank(item: DayPlanItem) {
+  if (item.completed) {
+    return 2;
+  }
+  if (item.cancelled) {
+    return 1;
+  }
+  return 0;
+}
+
 function compareDayPlanItems(a: DayPlanItem, b: DayPlanItem) {
-  if (a.completed !== b.completed) {
-    return a.completed ? 1 : -1;
+  const rankDiff = dayPlanItemSortRank(a) - dayPlanItemSortRank(b);
+  if (rankDiff !== 0) {
+    return rankDiff;
   }
 
   if (a.targetTime === null && b.targetTime === null) {
