@@ -509,18 +509,6 @@ function DayPlanItemRow({
               Restore item
             </ContextMenuItem>
           ) : null}
-          {!item.cancelled && !item.completed ? (
-            <ContextMenuItem
-              disabled={isPending}
-              onClick={() => {
-                startTransition(async () => {
-                  await setDayPlanItemCancelled(item.id, true);
-                });
-              }}
-            >
-              Cancel item
-            </ContextMenuItem>
-          ) : null}
           <ContextMenuItem
             disabled={isPending}
             onClick={() => {
@@ -547,19 +535,34 @@ function DayPlanItemRow({
           >
             Copy on the n-th day
           </ContextMenuItem>
-          {hasPendingReminder ? (
+          {hasPendingReminder || (!item.cancelled && !item.completed) ? (
             <>
               <ContextMenuSeparator />
-              <ContextMenuItem
-                variant="destructive"
-                onClick={() => {
-                  startTransition(async () => {
-                    await cancelDayPlanItemReminder(item.id);
-                  });
-                }}
-              >
-                Cancel reminder
-              </ContextMenuItem>
+              {hasPendingReminder ? (
+                <ContextMenuItem
+                  variant="destructive"
+                  onClick={() => {
+                    startTransition(async () => {
+                      await cancelDayPlanItemReminder(item.id);
+                    });
+                  }}
+                >
+                  Cancel reminder
+                </ContextMenuItem>
+              ) : null}
+              {!item.cancelled && !item.completed ? (
+                <ContextMenuItem
+                  variant="destructive"
+                  disabled={isPending}
+                  onClick={() => {
+                    startTransition(async () => {
+                      await setDayPlanItemCancelled(item.id, true);
+                    });
+                  }}
+                >
+                  Cancel item
+                </ContextMenuItem>
+              ) : null}
             </>
           ) : null}
         </ContextMenuContent>
