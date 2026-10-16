@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import * as z from "zod";
 
 import db from "@/lib/db";
+import { cancelReadReminderByReadId } from "@/lib/read-reminders";
 import { read } from "@/lib/schema";
 
 const MAX_TITLE_LENGTH = 200;
@@ -89,6 +90,7 @@ export async function markReadFinished(readId: string) {
   }
 
   try {
+    await cancelReadReminderByReadId(parsed.data);
     await db
       .update(read)
       .set({ type: "MARK_AS_RESOLVED" })
