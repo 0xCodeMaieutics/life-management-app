@@ -14,6 +14,10 @@ import { DayPlanTimeline } from "@/components/day-plan-timeline";
 import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
 import { useLocalToday } from "@/hooks/use-local-today";
+import {
+  getPendingDayPlanItemRemoveUndo,
+  undoPendingDayPlanItemRemove,
+} from "@/lib/day-plan-item-remove-undo";
 import { type DayPlanItem } from "@/lib/day-segments";
 import { shiftLocalDateString } from "@/lib/plan-date";
 
@@ -60,6 +64,17 @@ export default function DayPlanPageClient({
       if (event.key === "ArrowRight") {
         event.preventDefault();
         router.push(`/day-plan?date=${shiftLocalDateString(date, 1)}`);
+        return;
+      }
+
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === "z" &&
+        getPendingDayPlanItemRemoveUndo() !== null
+      ) {
+        event.preventDefault();
+        void undoPendingDayPlanItemRemove();
       }
     }
 
