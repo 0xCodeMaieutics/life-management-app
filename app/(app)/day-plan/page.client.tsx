@@ -9,6 +9,7 @@ import {
   CreateDayPlanTrigger,
 } from "@/components/create-day-plan-dialog";
 import { DayPlanItemCreateDialog } from "@/components/day-plan-item-create-dialog";
+import { DayPlanStepsTrigger } from "@/components/day-plan-steps-dialog";
 import { DayPlanTimeline } from "@/components/day-plan-timeline";
 import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,10 @@ export default function DayPlanPageClient({
           <h2 className="text-lg font-semibold">Day plan</h2>
           <div className="flex items-center gap-2">
             {hasDayPlan ? (
-              <AddTodosToDayPlanTrigger planDate={date} todos={todos} />
+              <>
+                <AddTodosToDayPlanTrigger planDate={date} todos={todos} />
+                <DayPlanStepsTrigger planDate={date} />
+              </>
             ) : null}
             <DayPlanItemCreateDialog planDate={date} />
           </div>
