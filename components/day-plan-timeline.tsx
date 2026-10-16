@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   copyDayPlanItemToNextDay,
   deleteDayPlanItem,
+  duplicateDayPlanItem,
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
 import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
@@ -476,6 +477,16 @@ function DayPlanItemRow({
               Remind me
             </ContextMenuItem>
           ) : null}
+          <ContextMenuItem
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                await duplicateDayPlanItem(item.id);
+              });
+            }}
+          >
+            Duplicate item
+          </ContextMenuItem>
           <ContextMenuItem
             disabled={isPending}
             onClick={() => {
