@@ -1,6 +1,12 @@
 "use client";
 
-import { CheckSquare, FileUp, FolderOpen, CalendarDays } from "lucide-react";
+import {
+  BookMarked,
+  CheckSquare,
+  FileUp,
+  FolderOpen,
+  CalendarDays,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,6 +40,12 @@ const NAV_ITEMS = [
     href: "/todos",
     icon: CheckSquare,
     isActive: (pathname: string) => pathname.startsWith("/todos"),
+  },
+  {
+    title: "Later reads",
+    href: "/later-reads",
+    icon: BookMarked,
+    isActive: (pathname: string) => pathname.startsWith("/later-reads"),
   },
   {
     title: "Matters",

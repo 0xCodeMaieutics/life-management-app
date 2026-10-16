@@ -36,6 +36,20 @@
       "when": 1792153403417,
       "tag": "0004_day_plan_item_cancelled",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792155129101,
+      "tag": "0005_short_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792155530190,
+      "tag": "0006_eager_mandrill",
+      "breakpoints": true
     }
   ]
 }
