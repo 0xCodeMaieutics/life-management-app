@@ -16,12 +16,24 @@ export const matterCategory = pgEnum("matter_category", [
   "unknown",
 ]);
 
+export const readType = pgEnum("read_type", ["IDLE", "MARK_AS_RESOLVED"]);
+
 export const matter = pgTable("matter", {
   id: uuid().primaryKey().defaultRandom(),
   title: text(),
   key: text().notNull(),
   documentContent: text("document_content").notNull(),
   category: matterCategory(),
+});
+
+export const read = pgTable("read", {
+  id: uuid().primaryKey().defaultRandom(),
+  url: text().notNull(),
+  title: text(),
+  type: readType().notNull().default("IDLE"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const todo = pgTable("todo", {

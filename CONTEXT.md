@@ -41,6 +41,11 @@ _Avoid_: Predefined todo
 A labeled set of todos you might apply together when building a day plan (for example “Health” or “Evening shutdown”). Not in the first release (sometimes called “todo templates” in planning—those groupings are out of scope; **Todo** is not).
 _Avoid_: Todo template (when you mean todo groups)
 
+**Read**:
+A saved link the user intends to open and read later: a required URL, an optional title for display, when it was added, and a **read type** of idle or mark-as-resolved. Not a **matter**, **todo**, or **day plan item**. New **reads** are idle. **Mark finished** sets read type to mark-as-resolved; the row stays in storage but leaves the **Later reads** list. **Archive** is not in the first release.
+_Code name_: `Read` (e.g. table `read`). Read type values: `IDLE`, `MARK_AS_RESOLVED`. `createdAt` orders the idle list newest-first (not shown in the UI).
+_Avoid_: Later read, reading list item, saved article (when you mean this concept); “read” when you mean the finished action (say **mark finished**); “type” when you mean **read type**
+
 **Create day plan**:
 The action that creates a day plan for the selected calendar date. Opens a dialog listing all of the user’s todos, each selected by default; the user unchecks any they do not want, then confirms. At least one todo must remain selected to confirm. Checked todos are snapshotted into day plan items. Todo groups are not used in this flow yet. If the user has no todos, the control is disabled and the UI directs them to add a todo first.
 
@@ -61,3 +66,6 @@ Top-level navigation area where the user manages the todo library (create, read,
 
 **Day plan**:
 Top-level navigation area where the user picks a local calendar date and views or creates that day’s plan, completes items, and removes items.
+
+**Later reads**:
+Top-level navigation area where the user adds **reads**, edits idle **reads** (URL and optional title), opens each row as a clickable external link, and marks **reads** finished (read type becomes mark-as-resolved). Only idle **reads** are shown; the list is ordered newest-first.
