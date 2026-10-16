@@ -61,3 +61,11 @@ export const dayPlanItemReminder = pgTable("day_plan_item_reminder", {
     "telegram_scheduled_message_id",
   ).notNull(),
 });
+
+export const dayPlanItemSteps = pgTable("day_plan_item_steps", {
+  id: uuid().primaryKey().defaultRandom(),
+  dayPlanItemId: uuid("day_plan_item_id")
+    .notNull()
+    .references(() => dayPlanItem.id, { onDelete: "cascade" }),
+  steps: integer().notNull(),
+});
