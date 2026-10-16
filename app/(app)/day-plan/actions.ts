@@ -373,6 +373,52 @@ export async function updateDayPlanItemSchedule(
   }
 }
 
+export async function duplicateDayPlanItem(itemId: string) {
+  const parsed = z.uuid().safeParse(itemId);
+  if (!parsed.success) {
+    return { ok: false as const };
+  }
+
+  try {
+    let isDuplicated = false;
+
+    await db.transaction(async (tx) => {
+      const [item] = await tx
+        .select({
+          dayPlanId: dayPlanItem.dayPlanId,
+          title: dayPlanItem.title,
+          targetTime: dayPlanItem.targetTime,
+        })
+        .from(dayPlanItem)
+        .where(eq(dayPlanItem.id, parsed.data))
+        .limit(1);
+
+      if (item === undefined) {
+        return;
+      }
+
+      await tx.insert(dayPlanItem).values({
+        dayPlanId: item.dayPlanId,
+        title: item.title,
+        targetTime: item.targetTime,
+        completed: false,
+      });
+
+      isDuplicated = true;
+    });
+
+    if (!isDuplicated) {
+      return { ok: false as const };
+    }
+
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const };
+  }
+}
+
 export async function copyDayPlanItemToNthDay(
   itemId: string,
   dayOffset: number,
