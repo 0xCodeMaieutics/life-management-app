@@ -12,9 +12,13 @@ A dated plan for what to do on a specific calendar day, made up of day plan item
 _Avoid_: Diary
 
 **Day plan item**:
-One entry on a day plan: title, optional target time, and whether it is completed for that day. The completion flag is stored in code as `completed`. Values are copied from todos when the item is created; later todo edits do not change existing day plan items. On an existing day plan, the user can mark items complete or incomplete, remove items from that plan, and change an item's date and target time. Changing the date moves the item to that date's day plan (created if missing); the source day plan is removed if it is left empty. Completed items stay in place within their day segment (order does not change when toggling complete). Archiving day plan items is not in the first release.
+One entry on a day plan: title, optional target time, and whether it is completed for that day. The completion flag is stored in code as `completed`. Values are copied from todos when the item is created; later todo edits do not change existing day plan items. On an existing day plan, the user can mark items complete or incomplete (except a **steps log**, which is always complete), remove items from that plan, and change an item's date and target time. Changing the date moves the item to that date's day plan (created if missing); the source day plan is removed if it is left empty. Completed items stay in place within their day segment (order does not change when toggling complete). Archiving day plan items is not in the first release.
 _Code name_: `DayPlanItem` (e.g. table `day_plan_item`). `targetTime` is `HH:mm | null` (nullable for one-off untimed items; always set when snapshotted from a todo).
 _Avoid_: DayPlanTodo
+
+**Steps log**:
+A **day plan item** that records steps the user has already walked, added via **Add completed steps**. It is a record of something done, not an intention, so it is created complete and the user cannot mark it incomplete. It has no right-click menu, so it cannot be copied to another day or given a **reminder**.
+_Avoid_: Steps todo, steps task
 
 **Target time**:
 Time-of-day (hour and minute only) for when the user aims to do something. Stored in code as `targetTime`, as an `HH:mm` string with no date. **Todo** and **day plan item** use the same field name (`targetTime`); on create day plan the item value is copied from the todo. On **Todo**, `targetTime` is always set (`HH:mm`, non-nullable)—a todo without a target time is not meant for reuse and cannot be saved in the library. On **day plan item**, `targetTime` is `HH:mm | null` so the user can later add one-off items without a time.

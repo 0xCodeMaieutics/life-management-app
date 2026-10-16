@@ -1,6 +1,13 @@
 "use client";
 
-import { Bell, CalendarClock, CheckSquare, Square, Trash2 } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  CheckSquare,
+  Footprints,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
@@ -77,6 +84,10 @@ export function DayPlanTimeline({
 
   const requestToggleComplete = useCallback(
     (item: DayPlanItem) => {
+      if (item.isStepsLog) {
+        return;
+      }
+
       if (item.completed) {
         startToggle(async () => {
           await setDayPlanItemCompleted(item.id, false);
@@ -365,7 +376,7 @@ function DayPlanItemRow({
 
   return (
     <>
-      <ContextMenu>
+      <ContextMenu disabled={item.isStepsLog}>
         <ContextMenuTrigger
           className={cn(
             "-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
@@ -375,30 +386,39 @@ function DayPlanItemRow({
         >
           <div className="flex flex-col">
             <div className="flex min-w-0 flex-1 items-center gap-1.5">
-              <button
-                type="button"
-                className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
-                disabled={isPending}
-                aria-label={
-                  item.completed
-                    ? `Mark ${item.title} incomplete`
-                    : `Mark ${item.title} complete`
-                }
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onRequestToggleComplete(item);
-                }}
-              >
-                {item.completed ? (
-                  <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
-                ) : (
-                  <Square className="size-4 shrink-0 stroke-muted-foreground" />
-                )}
-              </button>
+              {item.isStepsLog ? (
+                <Footprints
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-label="Steps log"
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
+                  disabled={isPending}
+                  aria-label={
+                    item.completed
+                      ? `Mark ${item.title} incomplete`
+                      : `Mark ${item.title} complete`
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRequestToggleComplete(item);
+                  }}
+                >
+                  {item.completed ? (
+                    <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
+                  ) : (
+                    <Square className="size-4 shrink-0 stroke-muted-foreground" />
+                  )}
+                </button>
+              )}
               <p
                 className={cn(
                   "text-sm leading-tight font-medium",
-                  item.completed && "text-muted-foreground line-through",
+                  item.completed &&
+                    !item.isStepsLog &&
+                    "text-muted-foreground line-through",
                 )}
               >
                 {item.title}

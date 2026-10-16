@@ -8,7 +8,13 @@ import { expirePastDayPlanReminders } from "@/lib/day-plan-reminders";
 import { type DayPlanItem } from "@/lib/day-segments";
 import db from "@/lib/db";
 import { isValidPlanDateString } from "@/lib/plan-date";
-import { dayPlan, dayPlanItem, dayPlanItemReminder, todo } from "@/lib/schema";
+import {
+  dayPlan,
+  dayPlanItem,
+  dayPlanItemReminder,
+  dayPlanItemSteps,
+  todo,
+} from "@/lib/schema";
 import { targetTimeSchema } from "@/lib/target-time";
 
 function mapPendingReminder(
@@ -66,11 +72,16 @@ async function DayPlanPageLoader({
             completed: dayPlanItem.completed,
             remindAt: dayPlanItemReminder.remindAt,
             remindTime: dayPlanItemReminder.remindTime,
+            stepsId: dayPlanItemSteps.id,
           })
           .from(dayPlanItem)
           .leftJoin(
             dayPlanItemReminder,
             eq(dayPlanItemReminder.dayPlanItemId, dayPlanItem.id),
+          )
+          .leftJoin(
+            dayPlanItemSteps,
+            eq(dayPlanItemSteps.dayPlanItemId, dayPlanItem.id),
           )
           .where(eq(dayPlanItem.dayPlanId, plan.id));
 
@@ -79,6 +90,7 @@ async function DayPlanPageLoader({
     title: row.title,
     targetTime: row.targetTime,
     completed: row.completed,
+    isStepsLog: row.stepsId !== null,
     pendingReminder: mapPendingReminder(row.remindAt, row.remindTime),
   }));
 

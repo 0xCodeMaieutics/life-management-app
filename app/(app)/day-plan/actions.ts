@@ -262,6 +262,15 @@ export async function setDayPlanItemCompleted(
   }
 
   try {
+    const [stepsLog] = await db
+      .select({ id: dayPlanItemSteps.id })
+      .from(dayPlanItemSteps)
+      .where(eq(dayPlanItemSteps.dayPlanItemId, parsed.data))
+      .limit(1);
+    if (stepsLog !== undefined) {
+      return { ok: false as const };
+    }
+
     if (completed) {
       await cancelDayPlanItemReminderByItemId(parsed.data);
     }

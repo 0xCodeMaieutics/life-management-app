@@ -125,6 +125,7 @@ export type DayPlanItem = {
   title: string;
   targetTime: DayPlanItemTargetTime;
   completed: boolean;
+  isStepsLog: boolean;
   pendingReminder: DayPlanItemPendingReminder | null;
 };
 
