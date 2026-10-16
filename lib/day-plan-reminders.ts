@@ -158,6 +158,7 @@ export async function getDayPlanItemWithPlanDate(itemId: string) {
       id: dayPlanItem.id,
       title: dayPlanItem.title,
       completed: dayPlanItem.completed,
+      cancelled: dayPlanItem.cancelled,
       planDate: dayPlan.date,
       targetTime: dayPlanItem.targetTime,
     })

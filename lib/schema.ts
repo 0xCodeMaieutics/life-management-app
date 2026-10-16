@@ -46,6 +46,7 @@ export const dayPlanItem = pgTable("day_plan_item", {
   title: text().notNull(),
   targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: boolean().notNull().default(false),
+  cancelled: boolean().notNull().default(false),
 });
 
 export const dayPlanItemReminder = pgTable("day_plan_item_reminder", {

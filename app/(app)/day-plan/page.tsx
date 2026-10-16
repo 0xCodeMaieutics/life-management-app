@@ -70,6 +70,7 @@ async function DayPlanPageLoader({
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
+            cancelled: dayPlanItem.cancelled,
             remindAt: dayPlanItemReminder.remindAt,
             remindTime: dayPlanItemReminder.remindTime,
             stepsId: dayPlanItemSteps.id,
@@ -90,6 +91,7 @@ async function DayPlanPageLoader({
     title: row.title,
     targetTime: row.targetTime,
     completed: row.completed,
+    cancelled: row.cancelled,
     isStepsLog: row.stepsId !== null,
     pendingReminder: mapPendingReminder(row.remindAt, row.remindTime),
   }));

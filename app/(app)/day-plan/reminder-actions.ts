@@ -39,7 +39,7 @@ export async function scheduleDayPlanItemReminder(input: {
   }
 
   const item = await getDayPlanItemWithPlanDate(idResult.data);
-  if (item === undefined || item.completed) {
+  if (item === undefined || item.completed || item.cancelled) {
     return { ok: false as const, error: "invalid" as const };
   }
 

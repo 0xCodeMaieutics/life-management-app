@@ -7,7 +7,7 @@ export function dayPlanItemCanScheduleReminder(
   planDate: string,
   timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone,
 ) {
-  if (item.completed || isPlanDateBeforeToday(planDate)) {
+  if (item.completed || item.cancelled || isPlanDateBeforeToday(planDate)) {
     return false;
   }
 
@@ -24,7 +24,7 @@ export function dayPlanItemHasPendingReminder(item: DayPlanItem) {
 }
 
 export function dayPlanItemNeedsCompleteConfirmation(item: DayPlanItem) {
-  if (item.completed || item.pendingReminder === null) {
+  if (item.completed || item.cancelled || item.pendingReminder === null) {
     return false;
   }
 

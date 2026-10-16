@@ -14,6 +14,7 @@ import {
   copyDayPlanItemToNextDay,
   deleteDayPlanItem,
   duplicateDayPlanItem,
+  setDayPlanItemCancelled,
   setDayPlanItemCompleted,
 } from "@/app/(app)/day-plan/actions";
 import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
@@ -85,7 +86,7 @@ export function DayPlanTimeline({
 
   const requestToggleComplete = useCallback(
     (item: DayPlanItem) => {
-      if (item.isStepsLog) {
+      if (item.isStepsLog || item.cancelled) {
         return;
       }
 
@@ -396,11 +397,13 @@ function DayPlanItemRow({
                 <button
                   type="button"
                   className="shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
-                  disabled={isPending}
+                  disabled={isPending || item.cancelled}
                   aria-label={
-                    item.completed
-                      ? `Mark ${item.title} incomplete`
-                      : `Mark ${item.title} complete`
+                    item.cancelled
+                      ? `${item.title} is cancelled`
+                      : item.completed
+                        ? `Mark ${item.title} incomplete`
+                        : `Mark ${item.title} complete`
                   }
                   onClick={(event) => {
                     event.stopPropagation();
@@ -410,7 +413,14 @@ function DayPlanItemRow({
                   {item.completed ? (
                     <CheckSquare className="size-4 shrink-0 stroke-primary text-primary" />
                   ) : (
-                    <Square className="size-4 shrink-0 stroke-muted-foreground" />
+                    <Square
+                      className={cn(
+                        "size-4 shrink-0",
+                        item.cancelled
+                          ? "stroke-destructive/70 text-destructive/70"
+                          : "stroke-muted-foreground",
+                      )}
+                    />
                   )}
                 </button>
               )}
@@ -420,6 +430,9 @@ function DayPlanItemRow({
                   item.completed &&
                     !item.isStepsLog &&
                     "text-muted-foreground line-through",
+                  item.cancelled &&
+                    !item.isStepsLog &&
+                    "text-destructive/80 line-through",
                 )}
               >
                 {item.title}
@@ -432,7 +445,14 @@ function DayPlanItemRow({
               ) : null}
             </div>
             {item.targetTime !== null ? (
-              <span className="ml-6 text-xs leading-tight text-muted-foreground">
+              <span
+                className={cn(
+                  "ml-6 text-xs leading-tight",
+                  item.cancelled
+                    ? "text-destructive/65"
+                    : "text-muted-foreground",
+                )}
+              >
                 {formatTargetTimeForDisplay(item.targetTime)}
               </span>
             ) : null}
@@ -475,6 +495,30 @@ function DayPlanItemRow({
           {canScheduleReminder ? (
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
               Remind me
+            </ContextMenuItem>
+          ) : null}
+          {item.cancelled ? (
+            <ContextMenuItem
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  await setDayPlanItemCancelled(item.id, false);
+                });
+              }}
+            >
+              Restore item
+            </ContextMenuItem>
+          ) : null}
+          {!item.cancelled && !item.completed ? (
+            <ContextMenuItem
+              disabled={isPending}
+              onClick={() => {
+                startTransition(async () => {
+                  await setDayPlanItemCancelled(item.id, true);
+                });
+              }}
+            >
+              Cancel item
             </ContextMenuItem>
           ) : null}
           <ContextMenuItem

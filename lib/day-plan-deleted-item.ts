@@ -9,6 +9,7 @@ export const deletedDayPlanItemSchema = z.object({
   title: z.string().min(1),
   targetTime: dayPlanItemTargetTimeSchema,
   completed: z.boolean(),
+  cancelled: z.boolean(),
 });
 
 export type DeletedDayPlanItem = z.infer<typeof deletedDayPlanItemSchema>;
