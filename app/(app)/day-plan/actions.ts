@@ -15,7 +15,10 @@ import {
 import db from "@/lib/db";
 import { isValidPlanDateString, shiftLocalDateString } from "@/lib/plan-date";
 import { dayPlan, dayPlanItem, todo } from "@/lib/schema";
-import { dayPlanItemTargetTimeSchema } from "@/lib/target-time";
+import {
+  dayPlanItemTargetTimeSchema,
+  targetTimeSchema,
+} from "@/lib/target-time";
 
 const planDateSchema = z.string().refine(isValidPlanDateString);
 
@@ -137,6 +140,58 @@ export async function createDayPlanItem(
   } catch (error) {
     console.error(error);
     return { errorMessage: "Could not create day plan item" };
+  }
+}
+
+const stepsCountSchema = z.number().int().min(1).max(999_999);
+
+export async function createCompletedStepsDayPlanItem(
+  planDate: string,
+  steps: number,
+  targetTime: string,
+) {
+  const dateResult = planDateSchema.safeParse(planDate);
+  const stepsResult = stepsCountSchema.safeParse(steps);
+  const timeResult = targetTimeSchema.safeParse(targetTime);
+
+  if (!dateResult.success || !stepsResult.success || !timeResult.success) {
+    return { ok: false as const, error: "invalid" as const };
+  }
+
+  const title = `👣 Walk ${stepsResult.data} steps`;
+
+  try {
+    await db.transaction(async (tx) => {
+      const [planForDate] = await tx
+        .select({ id: dayPlan.id })
+        .from(dayPlan)
+        .where(eq(dayPlan.date, dateResult.data))
+        .limit(1);
+
+      let dayPlanId: string;
+      if (planForDate !== undefined) {
+        dayPlanId = planForDate.id;
+      } else {
+        const [createdPlan] = await tx
+          .insert(dayPlan)
+          .values({ date: dateResult.data })
+          .returning({ id: dayPlan.id });
+        dayPlanId = createdPlan.id;
+      }
+
+      await tx.insert(dayPlanItem).values({
+        dayPlanId,
+        title,
+        targetTime: timeResult.data,
+        completed: true,
+      });
+    });
+
+    revalidatePath("/day-plan");
+    return { ok: true as const };
+  } catch (error) {
+    console.error(error);
+    return { ok: false as const, error: "failed" as const };
   }
 }
 
