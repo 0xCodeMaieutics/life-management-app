@@ -43,7 +43,7 @@ A labeled set of todos you might apply together when building a day plan (for ex
 _Avoid_: Todo template (when you mean todo groups)
 
 **Read**:
-A saved link the user intends to open and read later: a required URL, an optional title for display, when it was added, and a **read type** of idle or mark-as-resolved. Not a **matter**, **todo**, or **day plan item**. New **reads** are idle. **Mark finished** sets read type to mark-as-resolved; the row stays in storage but leaves the **Later reads** list and clears any pending **reminder**. Only idle **reads** can have a **reminder** scheduled. **Archive** is not in the first release.
+A saved link the user intends to open and read later: a required URL, an optional title for display, when it was added, and a **read type** of idle or mark-as-resolved. Not a **matter**, **todo**, or **day plan item**. New **reads** are idle. **Mark finished** sets read type to mark-as-resolved and records when it was finished; the row stays in storage, clears any pending **reminder**, and leaves the main idle list. Only idle **reads** can have a **reminder** scheduled. **Archive** is not in the first release.
 _Code name_: `Read` (e.g. table `read`). Read type values: `IDLE`, `MARK_AS_RESOLVED`. `createdAt` orders the idle list newest-first (not shown in the UI).
 _Avoid_: Later read, reading list item, saved article (when you mean this concept); “read” when you mean the finished action (say **mark finished**); “type” when you mean **read type**
 
@@ -69,4 +69,4 @@ Top-level navigation area where the user manages the todo library (create, read,
 Top-level navigation area where the user picks a local calendar date and views or creates that day’s plan, completes items, and removes items.
 
 **Later reads**:
-Top-level navigation area where the user adds **reads**, edits idle **reads** (URL and optional title), opens each row as a clickable external link, schedules **reminders** (**Remind me**), and marks **reads** finished (read type becomes mark-as-resolved). Only idle **reads** are shown; the list is ordered newest-first. A row with a pending **reminder** shows a scheduled-reminder indicator.
+Top-level navigation area where the user adds **reads**, edits idle **reads** (URL and optional title), opens each row as a clickable external link, schedules **reminders** (**Remind me**), and marks **reads** finished (read type becomes mark-as-resolved). The main list shows only idle **reads**, ordered newest-first. A row with a pending **reminder** shows a scheduled-reminder indicator. At the bottom, a collapsible **Finished** section lists up to ten most recently finished **reads** (by finish time, or added time when finish time was not recorded); the section title shows the total count of finished **reads**. Finished rows are read-only links with a short relative time since finish.
