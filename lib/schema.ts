@@ -31,6 +31,7 @@ export const read = pgTable("read", {
   url: text().notNull(),
   title: text(),
   type: readType().notNull().default("IDLE"),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
@@ -69,6 +70,7 @@ export const dayPlanItem = pgTable("day_plan_item", {
   dayPlanId: uuid("day_plan_id")
     .notNull()
     .references(() => dayPlan.id, { onDelete: "cascade" }),
+  todoId: uuid("todo_id").references(() => todo.id, { onDelete: "set null" }),
   title: text().notNull(),
   targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: boolean().notNull().default(false),

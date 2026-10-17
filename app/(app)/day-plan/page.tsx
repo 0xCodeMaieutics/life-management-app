@@ -67,6 +67,7 @@ async function DayPlanPageLoader({
       : await db
           .select({
             id: dayPlanItem.id,
+            todoId: dayPlanItem.todoId,
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
@@ -88,6 +89,7 @@ async function DayPlanPageLoader({
 
   const items = itemRows.map((row) => ({
     id: row.id,
+    todoId: row.todoId,
     title: row.title,
     targetTime: row.targetTime,
     completed: row.completed,

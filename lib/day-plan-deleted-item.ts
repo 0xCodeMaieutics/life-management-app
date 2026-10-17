@@ -10,6 +10,7 @@ export const deletedDayPlanItemSchema = z.object({
   targetTime: dayPlanItemTargetTimeSchema,
   completed: z.boolean(),
   cancelled: z.boolean(),
+  todoId: z.uuid().nullable(),
 });
 
 export type DeletedDayPlanItem = z.infer<typeof deletedDayPlanItemSchema>;

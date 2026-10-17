@@ -41,6 +41,7 @@ export function TodoRow({
 
   return (
     <li
+      id={`todo-row-${initialTodo.id}`}
       onClick={onSelect}
       className={cn(
         "flex flex-col gap-3 rounded-lg border p-4 transition-colors",
