@@ -18,14 +18,51 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-export function TodoList({ todos }: { todos: TodoRowData[] }) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+export function TodoList({
+  todos,
+  highlightTodoId,
+}: {
+  todos: TodoRowData[];
+  highlightTodoId?: string;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(() => {
+    if (highlightTodoId === undefined) {
+      return null;
+    }
+    const index = todos.findIndex((row) => row.id === highlightTodoId);
+    return index === -1 ? null : index;
+  });
   const [isDeleting, startDelete] = useTransition();
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(index, todos.length - 1)),
     [todos.length],
   );
+
+  useEffect(() => {
+    if (highlightTodoId === undefined) {
+      return;
+    }
+    const index = todos.findIndex((row) => row.id === highlightTodoId);
+    if (index !== -1) {
+      setSelectedIndex(index);
+    }
+  }, [highlightTodoId, todos]);
+
+  useEffect(() => {
+    if (selectedIndex === null) {
+      return;
+    }
+    const todo = todos[selectedIndex];
+    if (todo === undefined) {
+      return;
+    }
+    if (highlightTodoId !== undefined && todo.id === highlightTodoId) {
+      document
+        .getElementById(`todo-row-${todo.id}`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [highlightTodoId, selectedIndex, todos]);
 
   useEffect(() => {
     if (selectedIndex === null) {

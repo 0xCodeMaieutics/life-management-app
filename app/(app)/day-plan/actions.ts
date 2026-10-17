@@ -69,6 +69,7 @@ export async function createDayPlan(planDate: string, todoIds: string[]) {
       await tx.insert(dayPlanItem).values(
         selectedTodos.map((row) => ({
           dayPlanId: createdPlan.id,
+          todoId: row.id,
           title: row.title,
           targetTime: row.targetTime,
           completed: false,
@@ -224,6 +225,7 @@ export async function addTodosToDayPlan(planDate: string, todoIds: string[]) {
 
     const selectedTodos = await db
       .select({
+        id: todo.id,
         title: todo.title,
         targetTime: todo.targetTime,
       })
@@ -238,6 +240,7 @@ export async function addTodosToDayPlan(planDate: string, todoIds: string[]) {
     await db.insert(dayPlanItem).values(
       selectedTodos.map((row) => ({
         dayPlanId: plan.id,
+        todoId: row.id,
         title: row.title,
         targetTime: row.targetTime,
         completed: false,
@@ -426,6 +429,7 @@ export async function duplicateDayPlanItem(itemId: string) {
       const [item] = await tx
         .select({
           dayPlanId: dayPlanItem.dayPlanId,
+          todoId: dayPlanItem.todoId,
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
         })
@@ -439,6 +443,7 @@ export async function duplicateDayPlanItem(itemId: string) {
 
       await tx.insert(dayPlanItem).values({
         dayPlanId: item.dayPlanId,
+        todoId: item.todoId,
         title: item.title,
         targetTime: item.targetTime,
         completed: false,
@@ -475,6 +480,7 @@ export async function copyDayPlanItemToNthDay(
     await db.transaction(async (tx) => {
       const [item] = await tx
         .select({
+          todoId: dayPlanItem.todoId,
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
           planDate: dayPlan.date,
@@ -512,6 +518,7 @@ export async function copyDayPlanItemToNthDay(
 
       await tx.insert(dayPlanItem).values({
         dayPlanId,
+        todoId: item.todoId,
         title: item.title,
         targetTime: item.targetTime,
         completed: false,
@@ -553,6 +560,7 @@ export async function deleteDayPlanItem(itemId: string) {
           id: dayPlanItem.id,
           dayPlanId: dayPlanItem.dayPlanId,
           planDate: dayPlan.date,
+          todoId: dayPlanItem.todoId,
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
           completed: dayPlanItem.completed,
@@ -574,6 +582,7 @@ export async function deleteDayPlanItem(itemId: string) {
         targetTime: item.targetTime,
         completed: item.completed,
         cancelled: item.cancelled,
+        todoId: item.todoId,
       });
       if (!snapshot.success) {
         return;
@@ -644,6 +653,7 @@ export async function restoreDayPlanItem(deleted: DeletedDayPlanItem) {
       await tx.insert(dayPlanItem).values({
         id: snapshot.id,
         dayPlanId,
+        todoId: snapshot.todoId,
         title: snapshot.title,
         targetTime: snapshot.targetTime,
         completed: snapshot.completed,

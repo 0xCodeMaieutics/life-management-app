@@ -5,9 +5,11 @@ import {
   CalendarClock,
   CheckSquare,
   Footprints,
+  Link2Off,
   Square,
   Trash2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
 import {
@@ -31,6 +33,11 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   dayPlanItemCanScheduleReminder,
   dayPlanItemHasPendingReminder,
@@ -370,11 +377,13 @@ function DayPlanItemRow({
   onEdit: () => void;
   onRequestToggleComplete: (item: DayPlanItem) => void;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const hasPendingReminder = dayPlanItemHasPendingReminder(item);
   const canScheduleReminder = dayPlanItemCanScheduleReminder(item, planDate);
+  const isUnlinkedFromTodo = !item.isStepsLog && item.todoId === null;
 
   return (
     <>
@@ -444,17 +453,33 @@ function DayPlanItemRow({
                 />
               ) : null}
             </div>
-            {item.targetTime !== null ? (
-              <span
+            {item.targetTime !== null || isUnlinkedFromTodo ? (
+              <div
                 className={cn(
-                  "ml-6 text-xs leading-tight",
+                  "ml-6 flex items-center gap-1 text-xs leading-tight",
                   item.cancelled
                     ? "text-destructive/65"
                     : "text-muted-foreground",
                 )}
               >
-                {formatTargetTimeForDisplay(item.targetTime)}
-              </span>
+                {item.targetTime !== null ? (
+                  <span>{formatTargetTimeForDisplay(item.targetTime)}</span>
+                ) : null}
+                {isUnlinkedFromTodo ? (
+                  <Tooltip>
+                    <TooltipTrigger
+                      className="inline-flex shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
+                      aria-label="Not linked to a todo in your library"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Link2Off className="size-3.5" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      Not linked to a todo in your library
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </div>
             ) : null}
           </div>
           <div className="flex shrink-0 items-center">
@@ -496,6 +521,27 @@ function DayPlanItemRow({
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
               Remind me
             </ContextMenuItem>
+          ) : null}
+          {!item.isStepsLog ? (
+            item.todoId !== null ? (
+              <ContextMenuItem
+                onClick={() => {
+                  router.push(`/todos?todo=${item.todoId}`);
+                }}
+              >
+                Go to original todo
+              </ContextMenuItem>
+            ) : (
+              <ContextMenuItem
+                disabled
+                className="flex flex-col items-start gap-0.5 py-2"
+              >
+                <span>Go to original todo</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Not linked to the todo library.
+                </span>
+              </ContextMenuItem>
+            )
           ) : null}
           {item.cancelled ? (
             <ContextMenuItem

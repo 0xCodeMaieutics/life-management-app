@@ -127,6 +127,7 @@ export type DayPlanItem = {
   completed: boolean;
   cancelled: boolean;
   isStepsLog: boolean;
+  todoId: string | null;
   pendingReminder: DayPlanItemPendingReminder | null;
 };
 
