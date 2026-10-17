@@ -36,6 +36,20 @@ export const read = pgTable("read", {
     .notNull(),
 });
 
+export const readReminder = pgTable("read_reminder", {
+  id: uuid().primaryKey().defaultRandom(),
+  readId: uuid("read_id")
+    .notNull()
+    .unique()
+    .references(() => read.id, { onDelete: "cascade" }),
+  remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
+  remindTime: text("remind_time").notNull().$type<TodoTargetTime>(),
+  timeZone: text("time_zone").notNull(),
+  telegramScheduledMessageId: integer(
+    "telegram_scheduled_message_id",
+  ).notNull(),
+});
+
 export const todo = pgTable("todo", {
   id: uuid().primaryKey().defaultRandom(),
   title: text().notNull(),

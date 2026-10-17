@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import * as z from "zod";
 
 import db from "@/lib/db";
+import {
+  cancelReadReminderByReadId,
+  refreshReadReminderTelegramMessage,
+} from "@/lib/read-reminders";
 import { read } from "@/lib/schema";
+import { isTelegramConfigured } from "@/lib/telegram/client";
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_URL_LENGTH = 2048;
@@ -74,6 +79,14 @@ export async function updateReadFields(
 
   try {
     await db.update(read).set(values).where(eq(read.id, id));
+
+    if (isTelegramConfigured()) {
+      const refreshed = await refreshReadReminderTelegramMessage(id);
+      if (!refreshed.ok) {
+        return { ok: false as const };
+      }
+    }
+
     revalidatePath("/later-reads");
     return { ok: true as const };
   } catch (error) {
@@ -89,6 +102,7 @@ export async function markReadFinished(readId: string) {
   }
 
   try {
+    await cancelReadReminderByReadId(parsed.data);
     await db
       .update(read)
       .set({ type: "MARK_AS_RESOLVED" })
