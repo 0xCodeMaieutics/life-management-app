@@ -1,8 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ReadCreateForm } from "@/components/read-create-form";
+import { ReadFinishedList } from "@/components/read-finished-list";
 import { ReadList } from "@/components/read-list";
 import db from "@/lib/db";
 import {
@@ -78,12 +79,55 @@ async function ReadListSection() {
   return <ReadList reads={rows} />;
 }
 
+const FINISHED_READS_LIMIT = 10;
+
+async function ReadFinishedSection() {
+  await connection();
+
+  const [countRow] = await db
+    .select({ value: count() })
+    .from(read)
+    .where(eq(read.type, "MARK_AS_RESOLVED"));
+
+  const totalCount = countRow?.value ?? 0;
+  if (totalCount === 0) {
+    return null;
+  }
+
+  const finishedReads = await db
+    .select({
+      id: read.id,
+      url: read.url,
+      title: read.title,
+      finishedAt: read.finishedAt,
+      createdAt: read.createdAt,
+    })
+    .from(read)
+    .where(eq(read.type, "MARK_AS_RESOLVED"))
+    .orderBy(desc(sql`coalesce(${read.finishedAt}, ${read.createdAt})`))
+    .limit(FINISHED_READS_LIMIT);
+
+  const rows = finishedReads.map((row) => ({
+    id: row.id,
+    url: row.url,
+    title: row.title,
+    finishedAt: (row.finishedAt ?? row.createdAt).toISOString(),
+  }));
+
+  return <ReadFinishedList totalCount={totalCount} reads={rows} />;
+}
+
 export default function LaterReadsPage() {
   return (
     <main className="flex flex-1 flex-col gap-6 p-6">
       <ReadCreateForm />
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <ReadListSection />
+      </Suspense>
+      <Suspense fallback={null}>
+        <div className="mt-auto pt-2">
+          <ReadFinishedSection />
+        </div>
       </Suspense>
     </main>
   );

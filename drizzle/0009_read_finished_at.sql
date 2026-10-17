@@ -1,0 +1,1 @@
+ALTER TABLE "read" ADD COLUMN "finished_at" timestamp with time zone;

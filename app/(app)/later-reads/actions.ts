@@ -105,7 +105,7 @@ export async function markReadFinished(readId: string) {
     await cancelReadReminderByReadId(parsed.data);
     await db
       .update(read)
-      .set({ type: "MARK_AS_RESOLVED" })
+      .set({ type: "MARK_AS_RESOLVED", finishedAt: new Date() })
       .where(and(eq(read.id, parsed.data), eq(read.type, "IDLE")));
     revalidatePath("/later-reads");
     return { ok: true as const };
