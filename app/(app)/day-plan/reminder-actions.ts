@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import * as z from "zod";
 
+import { dayPlanItemReferenceFromColumns } from "@/lib/day-plan-item-reference";
 import {
   cancelDayPlanItemReminderByItemId,
   getDayPlanItemWithPlanDate,
@@ -54,6 +55,10 @@ export async function scheduleDayPlanItemReminder(input: {
       remindTime: timeResult.data,
       timeZone: timeZoneResult.data,
       title: item.title,
+      reference: dayPlanItemReferenceFromColumns(
+        item.referenceType,
+        item.referenceValue,
+      ),
     });
 
     if (!result.ok) {

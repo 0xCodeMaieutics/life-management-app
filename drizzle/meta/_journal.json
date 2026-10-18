@@ -8,6 +8,13 @@
       "when": 1792309773888,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792311596394,
+      "tag": "0001_day_plan_item_reference",
+      "breakpoints": true
     }
   ]
 }

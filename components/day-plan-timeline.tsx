@@ -23,6 +23,8 @@ import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions
 import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
 import { DayPlanItemCopyNthDayDialog } from "@/components/day-plan-item-copy-nth-day-dialog";
+import { DayPlanItemReferenceDialog } from "@/components/day-plan-item-reference-dialog";
+import { DayPlanItemReferenceLink } from "@/components/day-plan-item-reference-link";
 import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
 import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
 import { Button } from "@/components/ui/button";
@@ -381,6 +383,7 @@ function DayPlanItemRow({
   const [isPending, startTransition] = useTransition();
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
+  const [referenceOpen, setReferenceOpen] = useState(false);
   const hasPendingReminder = dayPlanItemHasPendingReminder(item);
   const canScheduleReminder = dayPlanItemCanScheduleReminder(item, planDate);
   const isUnlinkedFromTodo = !item.isStepsLog && item.todoId === null;
@@ -453,10 +456,12 @@ function DayPlanItemRow({
                 />
               ) : null}
             </div>
-            {item.targetTime !== null || isUnlinkedFromTodo ? (
+            {item.targetTime !== null ||
+            item.reference !== null ||
+            isUnlinkedFromTodo ? (
               <div
                 className={cn(
-                  "ml-6 flex items-center gap-1 text-xs leading-tight",
+                  "ml-6 flex min-w-0 items-center gap-1.5 text-xs leading-tight",
                   item.cancelled
                     ? "text-destructive/65"
                     : "text-muted-foreground",
@@ -464,6 +469,9 @@ function DayPlanItemRow({
               >
                 {item.targetTime !== null ? (
                   <span>{formatTargetTimeForDisplay(item.targetTime)}</span>
+                ) : null}
+                {item.reference !== null ? (
+                  <DayPlanItemReferenceLink reference={item.reference} />
                 ) : null}
                 {isUnlinkedFromTodo ? (
                   <Tooltip>
@@ -542,6 +550,11 @@ function DayPlanItemRow({
                 </span>
               </ContextMenuItem>
             )
+          ) : null}
+          {!item.isStepsLog ? (
+            <ContextMenuItem onClick={() => setReferenceOpen(true)}>
+              Edit reference
+            </ContextMenuItem>
           ) : null}
           {item.cancelled ? (
             <ContextMenuItem
@@ -628,6 +641,14 @@ function DayPlanItemRow({
           item={item}
           open
           onOpenChange={setCopyNthDayOpen}
+        />
+      ) : null}
+      {referenceOpen ? (
+        <DayPlanItemReferenceDialog
+          key={`${item.id}-reference`}
+          item={item}
+          open
+          onOpenChange={setReferenceOpen}
         />
       ) : null}
     </>

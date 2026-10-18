@@ -2,6 +2,8 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import type { DayPlanItemTargetTime, TodoTargetTime } from "@/lib/target-time";
 
+import { DAY_PLAN_ITEM_REFERENCE_TYPES } from "@/lib/day-plan-item-reference";
+
 const id = () =>
   text()
     .primaryKey()
@@ -70,6 +72,10 @@ export const dayPlanItem = sqliteTable("day_plan_item", {
   targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: integer({ mode: "boolean" }).notNull().default(false),
   cancelled: integer({ mode: "boolean" }).notNull().default(false),
+  referenceType: text("reference_type", {
+    enum: DAY_PLAN_ITEM_REFERENCE_TYPES,
+  }),
+  referenceValue: text("reference_value"),
 });
 
 export const dayPlanItemReminder = sqliteTable("day_plan_item_reminder", {
