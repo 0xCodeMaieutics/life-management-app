@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { scheduleDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
 import { showDayPlanReminderScheduledToast } from "@/components/day-plan-reminder-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type DayPlanItem } from "@/lib/day-segments";
+import { useTRPC } from "@/trpc/client";
 
 function defaultRemindTime(item: DayPlanItem) {
   if (item.pendingReminder !== null) {
@@ -34,9 +36,30 @@ export function DayPlanItemRemindDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [remindTime, setRemindTime] = useState(() => defaultRemindTime(item));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const scheduleReminder = useMutation(
+    trpc.dayPlan.scheduleReminder.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        showDayPlanReminderScheduledToast(item.id, () => router.refresh());
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (error.data?.code === "UNPROCESSABLE_CONTENT") {
+          setErrorMessage("Pick a time in the future.");
+          return;
+        }
+        if (error.data?.code === "PRECONDITION_FAILED") {
+          setErrorMessage("Telegram is not configured.");
+          return;
+        }
+        setErrorMessage("Could not schedule the reminder. Please try again.");
+      },
+    }),
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,29 +70,11 @@ export function DayPlanItemRemindDialog({
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    startTransition(async () => {
-      const result = await scheduleDayPlanItemReminder({
-        itemId: item.id,
-        planDate,
-        remindTime,
-        timeZone,
-      });
-
-      if (!result.ok) {
-        if (result.error === "past") {
-          setErrorMessage("Pick a time in the future.");
-          return;
-        }
-        if (result.error === "telegram") {
-          setErrorMessage("Telegram is not configured.");
-          return;
-        }
-        setErrorMessage("Could not schedule the reminder. Please try again.");
-        return;
-      }
-
-      showDayPlanReminderScheduledToast(item.id);
-      onOpenChange(false);
+    scheduleReminder.mutate({
+      itemId: item.id,
+      planDate,
+      remindTime,
+      timeZone,
     });
   }
 
@@ -102,8 +107,8 @@ export function DayPlanItemRemindDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Scheduling…" : "Schedule"}
+            <Button type="submit" disabled={scheduleReminder.isPending}>
+              {scheduleReminder.isPending ? "Scheduling…" : "Schedule"}
             </Button>
           </DialogFooter>
         </form>

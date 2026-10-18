@@ -1,7 +1,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import * as z from "zod";
 
-import { type TargetTime, targetTimeSchema } from "@/lib/target-time";
+import { type TargetTime } from "@/lib/target-time";
 
 export const ianaTimeZoneSchema = z
   .string()
@@ -25,8 +25,4 @@ export function computeRemindAt(
 
 export function isRemindAtInFuture(remindAt: Date) {
   return remindAt.getTime() > Date.now();
-}
-
-export function parseRemindTimeInput(value: string) {
-  return targetTimeSchema.safeParse(value);
 }

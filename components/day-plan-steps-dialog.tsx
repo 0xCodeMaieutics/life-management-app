@@ -1,9 +1,10 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { Footprints } from "lucide-react";
-import { type FormEvent, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { createCompletedStepsDayPlanItem } from "@/app/(app)/day-plan/actions";
 import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTRPC } from "@/trpc/client";
 
 function currentLocalTargetTime() {
   const now = new Date();
@@ -22,11 +24,21 @@ function currentLocalTargetTime() {
 }
 
 export function DayPlanStepsTrigger({ planDate }: { planDate: string }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [steps, setSteps] = useState("");
   const [targetTime, setTargetTime] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const createStepsItem = useMutation(
+    trpc.dayPlan.createStepsItem.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        setOpen(false);
+      },
+      onError: () => setErrorMessage("Could not add steps. Please try again."),
+    }),
+  );
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
@@ -49,18 +61,7 @@ export function DayPlanStepsTrigger({ planDate }: { planDate: string }) {
       return;
     }
 
-    startTransition(async () => {
-      const result = await createCompletedStepsDayPlanItem(
-        planDate,
-        parsedSteps,
-        targetTime,
-      );
-      if (!result.ok) {
-        setErrorMessage("Could not add steps. Please try again.");
-        return;
-      }
-      setOpen(false);
-    });
+    createStepsItem.mutate({ planDate, steps: parsedSteps, targetTime });
   }
 
   return (
@@ -118,8 +119,8 @@ export function DayPlanStepsTrigger({ planDate }: { planDate: string }) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Adding…" : "Add steps"}
+              <Button type="submit" disabled={createStepsItem.isPending}>
+                {createStepsItem.isPending ? "Adding…" : "Add steps"}
               </Button>
             </DialogFooter>
           </form>

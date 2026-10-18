@@ -51,14 +51,17 @@ export const dayPlanItemReferenceSchema = z.discriminatedUnion("type", [
 
 export type DayPlanItemReference = z.infer<typeof dayPlanItemReferenceSchema>;
 
-export function parseDayPlanItemReferenceFormData(formData: FormData) {
+export function dayPlanItemReferenceInputFromFormData(
+  formData: FormData,
+): z.input<typeof dayPlanItemReferenceSchema> | null {
   if (formData.get("hasReference") !== "on") {
-    return { success: true as const, data: null };
+    return null;
   }
-  return dayPlanItemReferenceSchema.safeParse({
-    type: formData.get("referenceType"),
-    value: formData.get("referenceValue"),
-  });
+  const value = formData.get("referenceValue");
+  return {
+    type: formData.get("referenceType") as DayPlanItemReferenceType,
+    value: typeof value === "string" ? value : "",
+  };
 }
 
 export function dayPlanItemReferenceFromColumns(

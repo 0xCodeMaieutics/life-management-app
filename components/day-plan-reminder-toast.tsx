@@ -1,17 +1,20 @@
 import { toast } from "sonner";
 
-import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
+import { trpcClient } from "@/trpc/client";
 
-export function showDayPlanReminderScheduledToast(itemId: string) {
+export function showDayPlanReminderScheduledToast(
+  itemId: string,
+  onCancelled: () => void,
+) {
   toast("Reminder scheduled", {
     action: {
       label: "Undo",
       onClick: () => {
-        void cancelDayPlanItemReminder(itemId).then((result) => {
-          if (!result.ok) {
+        trpcClient.dayPlan.cancelReminder
+          .mutate({ itemId })
+          .then(onCancelled, () => {
             toast.error("Could not cancel reminder");
-          }
-        });
+          });
       },
     },
   });

@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { updateDayPlanItemSchedule } from "@/app/(app)/day-plan/actions";
 import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type DayPlanItem } from "@/lib/day-segments";
 import { isValidPlanDateString } from "@/lib/plan-date";
+import { useTRPC } from "@/trpc/client";
 
 export function DayPlanItemScheduleDialog({
   item,
@@ -28,10 +30,18 @@ export function DayPlanItemScheduleDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [planDate, setPlanDate] = useState(initialPlanDate);
   const [targetTime, setTargetTime] = useState(item.targetTime ?? "");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const updateSchedule = useMutation(
+    trpc.dayPlan.updateItemSchedule.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        onOpenChange(false);
+      },
+    }),
+  );
 
   const isPlanDateValid = isValidPlanDateString(planDate);
 
@@ -41,17 +51,10 @@ export function DayPlanItemScheduleDialog({
       return;
     }
 
-    startTransition(async () => {
-      const result = await updateDayPlanItemSchedule(
-        item.id,
-        planDate,
-        targetTime === "" ? null : targetTime,
-      );
-      if (!result.ok) {
-        setErrorMessage("Could not update the item. Please try again.");
-        return;
-      }
-      onOpenChange(false);
+    updateSchedule.mutate({
+      itemId: item.id,
+      planDate,
+      targetTime: targetTime === "" ? null : targetTime,
     });
   }
 
@@ -86,8 +89,10 @@ export function DayPlanItemScheduleDialog({
               onTargetTimeChange={setTargetTime}
             />
           </div>
-          {errorMessage !== null ? (
-            <p className="text-sm text-destructive">{errorMessage}</p>
+          {updateSchedule.error !== null ? (
+            <p className="text-sm text-destructive">
+              Could not update the item. Please try again.
+            </p>
           ) : null}
           <DialogFooter>
             <Button
@@ -97,8 +102,11 @@ export function DayPlanItemScheduleDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !isPlanDateValid}>
-              {isPending ? "Saving…" : "Save"}
+            <Button
+              type="submit"
+              disabled={updateSchedule.isPending || !isPlanDateValid}
+            >
+              {updateSchedule.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

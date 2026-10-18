@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import {
   Bell,
   CalendarClock,
@@ -10,17 +11,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  copyDayPlanItemToNextDay,
-  deleteDayPlanItem,
-  duplicateDayPlanItem,
-  setDayPlanItemCancelled,
-  setDayPlanItemCompleted,
-} from "@/app/(app)/day-plan/actions";
-import { cancelDayPlanItemReminder } from "@/app/(app)/day-plan/reminder-actions";
 import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
 import { DayPlanItemCopyNthDayDialog } from "@/components/day-plan-item-copy-nth-day-dialog";
@@ -55,6 +48,7 @@ import {
 } from "@/lib/day-segments";
 import { formatTargetTimeForDisplay } from "@/lib/target-time";
 import { cn } from "@/lib/utils";
+import { useTRPC } from "@/trpc/client";
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -88,9 +82,22 @@ export function DayPlanTimeline({
     ({ items: segmentItems }) => segmentItems,
   );
 
+  const trpc = useTRPC();
+  const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [isDeleting, startDelete] = useTransition();
-  const [isToggling, startToggle] = useTransition();
+  const { mutate: deleteItem, isPending: isDeleting } = useMutation(
+    trpc.dayPlan.deleteItem.mutationOptions({
+      onSuccess: ({ deleted }) => {
+        router.refresh();
+        showDayPlanItemDeletedToast(deleted, () => router.refresh());
+      },
+    }),
+  );
+  const { mutate: setItemCompleted, isPending: isToggling } = useMutation(
+    trpc.dayPlan.setItemCompleted.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
   const [editingItem, setEditingItem] = useState<DayPlanItem | null>(null);
   const [completeConfirmItem, setCompleteConfirmItem] =
     useState<DayPlanItem | null>(null);
@@ -102,9 +109,7 @@ export function DayPlanTimeline({
       }
 
       if (item.completed) {
-        startToggle(async () => {
-          await setDayPlanItemCompleted(item.id, false);
-        });
+        setItemCompleted({ itemId: item.id, completed: false });
         return;
       }
 
@@ -113,11 +118,9 @@ export function DayPlanTimeline({
         return;
       }
 
-      startToggle(async () => {
-        await setDayPlanItemCompleted(item.id, true);
-      });
+      setItemCompleted({ itemId: item.id, completed: true });
     },
-    [startToggle],
+    [setItemCompleted],
   );
 
   const clampIndex = useCallback(
@@ -204,25 +207,26 @@ export function DayPlanTimeline({
           return;
         }
         const indexToRemove = selectedIndex;
-        startDelete(async () => {
-          const result = await deleteDayPlanItem(item.id);
-          if (result.ok) {
-            showDayPlanItemDeletedToast(result.deleted);
-            setSelectedIndex((current) => {
-              if (current === null) {
-                return null;
-              }
-              const nextLength = orderedItems.length - 1;
-              if (nextLength === 0) {
-                return null;
-              }
-              if (indexToRemove >= nextLength) {
-                return nextLength - 1;
-              }
-              return indexToRemove;
-            });
-          }
-        });
+        deleteItem(
+          { itemId: item.id },
+          {
+            onSuccess: () => {
+              setSelectedIndex((current) => {
+                if (current === null) {
+                  return null;
+                }
+                const nextLength = orderedItems.length - 1;
+                if (nextLength === 0) {
+                  return null;
+                }
+                if (indexToRemove >= nextLength) {
+                  return nextLength - 1;
+                }
+                return indexToRemove;
+              });
+            },
+          },
+        );
       }
     }
 
@@ -230,6 +234,7 @@ export function DayPlanTimeline({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     clampIndex,
+    deleteItem,
     editingItem,
     isDeleting,
     isToggling,
@@ -280,13 +285,10 @@ export function DayPlanTimeline({
             }
           }}
           onConfirm={() => {
-            const item = completeConfirmItem;
-            startToggle(async () => {
-              const result = await setDayPlanItemCompleted(item.id, true);
-              if (result.ok) {
-                setCompleteConfirmItem(null);
-              }
-            });
+            setItemCompleted(
+              { itemId: completeConfirmItem.id, completed: true },
+              { onSuccess: () => setCompleteConfirmItem(null) },
+            );
           }}
         />
       ) : null}
@@ -381,8 +383,48 @@ function DayPlanItemRow({
   onEdit: () => void;
   onRequestToggleComplete: (item: DayPlanItem) => void;
 }) {
+  const trpc = useTRPC();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const deleteItem = useMutation(
+    trpc.dayPlan.deleteItem.mutationOptions({
+      onSuccess: ({ deleted }) => {
+        router.refresh();
+        showDayPlanItemDeletedToast(deleted, () => router.refresh());
+      },
+    }),
+  );
+  const setItemCancelled = useMutation(
+    trpc.dayPlan.setItemCancelled.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
+  const duplicateItem = useMutation(
+    trpc.dayPlan.duplicateItem.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
+  const copyToNextDay = useMutation(
+    trpc.dayPlan.copyItemToNthDay.mutationOptions({
+      onSuccess: ({ copiedItemId }) => {
+        router.refresh();
+        showDayPlanItemCopiedToNextDayToast(copiedItemId, () =>
+          router.refresh(),
+        );
+      },
+      onError: () => toast.error("Could not copy to the next day"),
+    }),
+  );
+  const cancelReminder = useMutation(
+    trpc.dayPlan.cancelReminder.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
+  const isPending =
+    deleteItem.isPending ||
+    setItemCancelled.isPending ||
+    duplicateItem.isPending ||
+    copyToNextDay.isPending ||
+    cancelReminder.isPending;
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
@@ -514,12 +556,7 @@ function DayPlanItemRow({
               disabled={isPending}
               onClick={(event) => {
                 event.stopPropagation();
-                startTransition(async () => {
-                  const result = await deleteDayPlanItem(item.id);
-                  if (result.ok) {
-                    showDayPlanItemDeletedToast(result.deleted);
-                  }
-                });
+                deleteItem.mutate({ itemId: item.id });
               }}
             >
               <Trash2 />
@@ -565,9 +602,7 @@ function DayPlanItemRow({
             <ContextMenuItem
               disabled={isPending}
               onClick={() => {
-                startTransition(async () => {
-                  await setDayPlanItemCancelled(item.id, false);
-                });
+                setItemCancelled.mutate({ itemId: item.id, cancelled: false });
               }}
             >
               Restore item
@@ -576,9 +611,7 @@ function DayPlanItemRow({
           <ContextMenuItem
             disabled={isPending}
             onClick={() => {
-              startTransition(async () => {
-                await duplicateDayPlanItem(item.id);
-              });
+              duplicateItem.mutate({ itemId: item.id });
             }}
           >
             Duplicate item
@@ -586,14 +619,7 @@ function DayPlanItemRow({
           <ContextMenuItem
             disabled={isPending}
             onClick={() => {
-              startTransition(async () => {
-                const result = await copyDayPlanItemToNextDay(item.id);
-                if (result.ok) {
-                  showDayPlanItemCopiedToNextDayToast(result.copiedItemId);
-                } else {
-                  toast.error("Could not copy to the next day");
-                }
-              });
+              copyToNextDay.mutate({ itemId: item.id, dayOffset: 1 });
             }}
           >
             Copy on the next day
@@ -611,9 +637,7 @@ function DayPlanItemRow({
                 <ContextMenuItem
                   variant="destructive"
                   onClick={() => {
-                    startTransition(async () => {
-                      await cancelDayPlanItemReminder(item.id);
-                    });
+                    cancelReminder.mutate({ itemId: item.id });
                   }}
                 >
                   Cancel reminder
@@ -624,8 +648,9 @@ function DayPlanItemRow({
                   variant="destructive"
                   disabled={isPending}
                   onClick={() => {
-                    startTransition(async () => {
-                      await setDayPlanItemCancelled(item.id, true);
+                    setItemCancelled.mutate({
+                      itemId: item.id,
+                      cancelled: true,
                     });
                   }}
                 >
