@@ -2,45 +2,14 @@
 
 import type { ReactNode } from "react";
 
-import {
-  isServer,
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
-
 import { Toaster } from "@/components/ui/sonner";
-
-function makeQueryClient() {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000,
-      },
-    },
-  });
-}
-
-let browserQueryClient: QueryClient | undefined;
-
-function getQueryClient() {
-  if (isServer) {
-    return makeQueryClient();
-  }
-
-  if (!browserQueryClient) {
-    browserQueryClient = makeQueryClient();
-  }
-
-  return browserQueryClient;
-}
+import { TRPCReactProvider } from "@/trpc/client";
 
 export function Providers({ children }: { children: ReactNode }) {
-  const queryClient = getQueryClient();
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <TRPCReactProvider>
       {children}
       <Toaster />
-    </QueryClientProvider>
+    </TRPCReactProvider>
   );
 }
