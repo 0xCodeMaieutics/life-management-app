@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import {
   copyDayPlanItemToNextDay,
@@ -40,6 +41,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { showDayPlanItemCopiedToNextDayToast } from "@/lib/day-plan-item-copy-undo";
 import {
   dayPlanItemCanScheduleReminder,
   dayPlanItemHasPendingReminder,
@@ -582,7 +584,12 @@ function DayPlanItemRow({
             disabled={isPending}
             onClick={() => {
               startTransition(async () => {
-                await copyDayPlanItemToNextDay(item.id);
+                const result = await copyDayPlanItemToNextDay(item.id);
+                if (result.ok) {
+                  showDayPlanItemCopiedToNextDayToast(result.copiedItemId);
+                } else {
+                  toast.error("Could not copy to the next day");
+                }
               });
             }}
           >

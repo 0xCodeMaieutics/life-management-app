@@ -545,7 +545,7 @@ export async function copyDayPlanItemToNthDay(
   }
 
   try {
-    let isCopied = false;
+    let copiedItemId: string | undefined;
 
     await db.transaction(async (tx) => {
       const [item] = await tx
@@ -588,25 +588,28 @@ export async function copyDayPlanItemToNthDay(
         dayPlanId = createdPlan.id;
       }
 
-      await tx.insert(dayPlanItem).values({
-        dayPlanId,
-        todoId: item.todoId,
-        title: item.title,
-        targetTime: item.targetTime,
-        completed: false,
-        referenceType: item.referenceType,
-        referenceValue: item.referenceValue,
-      });
+      const [copiedItem] = await tx
+        .insert(dayPlanItem)
+        .values({
+          dayPlanId,
+          todoId: item.todoId,
+          title: item.title,
+          targetTime: item.targetTime,
+          completed: false,
+          referenceType: item.referenceType,
+          referenceValue: item.referenceValue,
+        })
+        .returning({ id: dayPlanItem.id });
 
-      isCopied = true;
+      copiedItemId = copiedItem.id;
     });
 
-    if (!isCopied) {
+    if (copiedItemId === undefined) {
       return { ok: false as const };
     }
 
     revalidatePath("/day-plan");
-    return { ok: true as const };
+    return { ok: true as const, copiedItemId };
   } catch (error) {
     console.error(error);
     return { ok: false as const };
