@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { MatterAttachment } from "@/components/matter-attachment";
@@ -6,6 +7,7 @@ import db from "@/lib/db";
 import { matter } from "@/lib/schema";
 
 async function MatterList() {
+  await connection();
   const matters = await db
     .select({
       id: matter.id,
