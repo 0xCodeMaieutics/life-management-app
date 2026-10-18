@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
-import { deleteTodo } from "@/app/(app)/todos/actions";
 import { TodoRow, type TodoRowData } from "@/components/todo-row";
+import { useTRPC } from "@/trpc/client";
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -32,7 +34,13 @@ export function TodoList({
     const index = todos.findIndex((row) => row.id === highlightTodoId);
     return index === -1 ? null : index;
   });
-  const [isDeleting, startDelete] = useTransition();
+  const trpc = useTRPC();
+  const router = useRouter();
+  const { mutate: deleteTodo, isPending: isDeleting } = useMutation(
+    trpc.todo.delete.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
 
   const clampIndex = useCallback(
     (index: number) => Math.max(0, Math.min(index, todos.length - 1)),
@@ -178,30 +186,32 @@ export function TodoList({
           return;
         }
         const indexToRemove = selectedIndex;
-        startDelete(async () => {
-          const result = await deleteTodo(todo.id);
-          if (result.ok) {
-            setSelectedIndex((current) => {
-              if (current === null) {
-                return null;
-              }
-              const nextLength = todos.length - 1;
-              if (nextLength === 0) {
-                return null;
-              }
-              if (indexToRemove >= nextLength) {
-                return nextLength - 1;
-              }
-              return indexToRemove;
-            });
-          }
-        });
+        deleteTodo(
+          { id: todo.id },
+          {
+            onSuccess: () => {
+              setSelectedIndex((current) => {
+                if (current === null) {
+                  return null;
+                }
+                const nextLength = todos.length - 1;
+                if (nextLength === 0) {
+                  return null;
+                }
+                if (indexToRemove >= nextLength) {
+                  return nextLength - 1;
+                }
+                return indexToRemove;
+              });
+            },
+          },
+        );
       }
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clampIndex, isDeleting, selectedIndex, todos]);
+  }, [clampIndex, deleteTodo, isDeleting, selectedIndex, todos]);
 
   return (
     <ul className="flex flex-col gap-4">
