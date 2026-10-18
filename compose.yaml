@@ -1,21 +1,4 @@
 services:
-  db:
-    image: postgres:17
-    ports:
-      - 5441:5432
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-
-    healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
-      timeout: 45s
-      interval: 2s
-      retries: 50
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   seaweedfs:
     image: chrislusf/seaweedfs
     ports:
@@ -38,6 +21,3 @@ services:
     depends_on:
       - seaweedfs
     restart: unless-stopped
-
-volumes:
-  pgdata:
