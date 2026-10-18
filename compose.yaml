@@ -24,5 +24,20 @@ services:
       AWS_ACCESS_KEY_ID: access_key
       AWS_SECRET_ACCESS_KEY: access_secret_keys
 
+  app:
+    profiles: [prod]
+    build: .
+    ports:
+      - 3001:3001
+    env_file: .env
+    environment:
+      DATABASE_URL: file:/app/data/prod.db
+      S3_ENDPOINT: http://seaweedfs:8333
+    volumes:
+      - ${HOME}/Library/Application Support/life-management:/app/data
+    depends_on:
+      - seaweedfs
+    restart: unless-stopped
+
 volumes:
   pgdata:
