@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { scheduleReadReminder } from "@/app/(app)/later-reads/reminder-actions";
 import { showReadReminderScheduledToast } from "@/components/read-reminder-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import {
   readRemindDialogDefaults,
   readRemindDialogLabel,
 } from "@/lib/read-reminder-ui";
+import { useTRPC } from "@/trpc/client";
 
 function parseDayOffsetInput(value: string) {
   const trimmed = value.trim();
@@ -51,6 +53,8 @@ export function ReadRemindDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const defaults = readRemindDialogDefaults(read);
   const [remindTime, setRemindTime] = useState(() => defaults.remindTime);
   const [notToday, setNotToday] = useState(() => defaults.notToday);
@@ -58,7 +62,26 @@ export function ReadRemindDialog({
     () => defaults.dayOffset,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const scheduleReadReminder = useMutation(
+    trpc.read.scheduleReminder.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        showReadReminderScheduledToast(read.id, () => router.refresh());
+        onOpenChange(false);
+      },
+      onError: (error) => {
+        if (error.data?.code === "UNPROCESSABLE_CONTENT") {
+          setErrorMessage("Pick a time in the future.");
+          return;
+        }
+        if (error.data?.code === "PRECONDITION_FAILED") {
+          setErrorMessage("Telegram is not configured.");
+          return;
+        }
+        setErrorMessage("Could not schedule the reminder. Please try again.");
+      },
+    }),
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,30 +102,12 @@ export function ReadRemindDialog({
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    startTransition(async () => {
-      const result = await scheduleReadReminder({
-        readId: read.id,
-        remindTime,
-        timeZone,
-        notToday,
-        dayOffset,
-      });
-
-      if (!result.ok) {
-        if (result.error === "past") {
-          setErrorMessage("Pick a time in the future.");
-          return;
-        }
-        if (result.error === "telegram") {
-          setErrorMessage("Telegram is not configured.");
-          return;
-        }
-        setErrorMessage("Could not schedule the reminder. Please try again.");
-        return;
-      }
-
-      showReadReminderScheduledToast(read.id);
-      onOpenChange(false);
+    scheduleReadReminder.mutate({
+      readId: read.id,
+      remindTime,
+      timeZone,
+      notToday,
+      dayOffset,
     });
   }
 
@@ -158,8 +163,8 @@ export function ReadRemindDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Scheduling…" : "Schedule"}
+            <Button type="submit" disabled={scheduleReadReminder.isPending}>
+              {scheduleReadReminder.isPending ? "Scheduling…" : "Schedule"}
             </Button>
           </DialogFooter>
         </form>
