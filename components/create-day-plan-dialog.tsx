@@ -175,7 +175,9 @@ export function CreateDayPlanTrigger({
         <p className="text-sm text-muted-foreground">
           Add a todo before you can create a day plan.
         </p>
-        <Button render={<Link href="/todos" />}>Go to todos</Button>
+        <Button nativeButton={false} render={<Link href="/todos" />}>
+          Go to todos
+        </Button>
       </div>
     );
   }
