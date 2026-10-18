@@ -525,6 +525,9 @@ function DayPlanItemRow({
           </div>
         </ContextMenuTrigger>
         <ContextMenuContent>
+          <ContextMenuItem disabled={isPending} onClick={onEdit}>
+            Change item
+          </ContextMenuItem>
           {canScheduleReminder ? (
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
               Remind me
