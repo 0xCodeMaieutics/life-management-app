@@ -1,1 +1,0 @@
-ALTER TABLE "day_plan_item" ADD COLUMN "cancelled" boolean DEFAULT false NOT NULL;

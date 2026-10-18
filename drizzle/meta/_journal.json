@@ -1,75 +1,12 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1791832854646,
-      "tag": "0000_careful_iron_patriot",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1792055492006,
-      "tag": "0001_peaceful_silverclaw",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1792060000000,
-      "tag": "0002_day_plan_item_reminder",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1792130807748,
-      "tag": "0003_day_plan_item_steps",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1792153403417,
-      "tag": "0004_day_plan_item_cancelled",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1792155129101,
-      "tag": "0005_short_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1792155530190,
-      "tag": "0006_eager_mandrill",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1792156536209,
-      "tag": "0007_read_reminder",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1792214736103,
-      "tag": "0008_day_plan_item_todo_id",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1792217058949,
-      "tag": "0009_read_finished_at",
+      "version": "6",
+      "when": 1792309773888,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]

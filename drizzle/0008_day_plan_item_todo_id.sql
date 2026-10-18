@@ -1,2 +1,0 @@
-ALTER TABLE "day_plan_item" ADD COLUMN "todo_id" uuid;--> statement-breakpoint
-ALTER TABLE "day_plan_item" ADD CONSTRAINT "day_plan_item_todo_id_todo_id_fk" FOREIGN KEY ("todo_id") REFERENCES "public"."todo"("id") ON DELETE set null ON UPDATE no action;
