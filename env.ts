@@ -33,6 +33,11 @@ export const env = createEnv({
   runtimeEnv: process.env,
 
   /**
+   * Set only in the Docker build stage, where runtime secrets are absent.
+   */
+  skipValidation: process.env["SKIP_ENV_VALIDATION"] === "1",
+
+  /**
    * By default, this library will feed the environment variables directly to
    * the Zod validator.
    *
