@@ -2,11 +2,20 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
+  Ban,
   Bell,
+  BellOff,
   CalendarClock,
+  CalendarPlus,
+  CalendarRange,
   CheckSquare,
+  Copy,
+  ExternalLink,
   Footprints,
+  Link2,
   Link2Off,
+  Pencil,
+  RotateCcw,
   Square,
   Trash2,
 } from "lucide-react";
@@ -565,10 +574,12 @@ function DayPlanItemRow({
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem disabled={isPending} onClick={onEdit}>
+            <Pencil />
             Change item
           </ContextMenuItem>
           {canScheduleReminder ? (
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
+              <Bell />
               Remind me
             </ContextMenuItem>
           ) : null}
@@ -579,22 +590,24 @@ function DayPlanItemRow({
                   router.push(`/todos?todo=${item.todoId}`);
                 }}
               >
+                <ExternalLink />
                 Go to original todo
               </ContextMenuItem>
             ) : (
-              <ContextMenuItem
-                disabled
-                className="flex flex-col items-start gap-0.5 py-2"
-              >
-                <span>Go to original todo</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  Not linked to the todo library.
+              <ContextMenuItem disabled className="items-start py-2">
+                <ExternalLink className="mt-0.5" />
+                <span className="flex flex-col gap-0.5">
+                  <span>Go to original todo</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    Not linked to the todo library.
+                  </span>
                 </span>
               </ContextMenuItem>
             )
           ) : null}
           {!item.isStepsLog ? (
             <ContextMenuItem onClick={() => setReferenceOpen(true)}>
+              <Link2 />
               Edit reference
             </ContextMenuItem>
           ) : null}
@@ -605,6 +618,7 @@ function DayPlanItemRow({
                 setItemCancelled.mutate({ itemId: item.id, cancelled: false });
               }}
             >
+              <RotateCcw />
               Restore item
             </ContextMenuItem>
           ) : null}
@@ -614,6 +628,7 @@ function DayPlanItemRow({
               duplicateItem.mutate({ itemId: item.id });
             }}
           >
+            <Copy />
             Duplicate item
           </ContextMenuItem>
           <ContextMenuItem
@@ -622,12 +637,14 @@ function DayPlanItemRow({
               copyToNextDay.mutate({ itemId: item.id, dayOffset: 1 });
             }}
           >
+            <CalendarPlus />
             Copy on the next day
           </ContextMenuItem>
           <ContextMenuItem
             disabled={isPending}
             onClick={() => setCopyNthDayOpen(true)}
           >
+            <CalendarRange />
             Copy on the n-th day
           </ContextMenuItem>
           {hasPendingReminder || (!item.cancelled && !item.completed) ? (
@@ -640,6 +657,7 @@ function DayPlanItemRow({
                     cancelReminder.mutate({ itemId: item.id });
                   }}
                 >
+                  <BellOff />
                   Cancel reminder
                 </ContextMenuItem>
               ) : null}
@@ -654,6 +672,7 @@ function DayPlanItemRow({
                     });
                   }}
                 >
+                  <Ban />
                   Cancel item
                 </ContextMenuItem>
               ) : null}
