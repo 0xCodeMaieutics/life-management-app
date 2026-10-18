@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { type DayPlanItemReference } from "@/lib/day-plan-item-reference";
 import {
   type DayPlanItemTargetTime,
   type TargetTime,
@@ -128,6 +129,7 @@ export type DayPlanItem = {
   cancelled: boolean;
   isStepsLog: boolean;
   todoId: string | null;
+  reference: DayPlanItemReference | null;
   pendingReminder: DayPlanItemPendingReminder | null;
 };
 

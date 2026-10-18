@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import DayPlanPageClient from "@/app/(app)/day-plan/page.client";
 import { DayPlanRedirectToToday } from "@/components/day-plan-redirect-to-today";
+import { dayPlanItemReferenceFromColumns } from "@/lib/day-plan-item-reference";
 import { expirePastDayPlanReminders } from "@/lib/day-plan-reminders";
 import { type DayPlanItem } from "@/lib/day-segments";
 import db from "@/lib/db";
@@ -72,6 +73,8 @@ async function DayPlanPageLoader({
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
             cancelled: dayPlanItem.cancelled,
+            referenceType: dayPlanItem.referenceType,
+            referenceValue: dayPlanItem.referenceValue,
             remindAt: dayPlanItemReminder.remindAt,
             remindTime: dayPlanItemReminder.remindTime,
             stepsId: dayPlanItemSteps.id,
@@ -95,6 +98,10 @@ async function DayPlanPageLoader({
     completed: row.completed,
     cancelled: row.cancelled,
     isStepsLog: row.stepsId !== null,
+    reference: dayPlanItemReferenceFromColumns(
+      row.referenceType,
+      row.referenceValue,
+    ),
     pendingReminder: mapPendingReminder(row.remindAt, row.remindTime),
   }));
 

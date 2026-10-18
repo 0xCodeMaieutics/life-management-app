@@ -1,5 +1,9 @@
 import { eq, lte } from "drizzle-orm";
 
+import {
+  type DayPlanItemReference,
+  dayPlanItemReferenceFromColumns,
+} from "@/lib/day-plan-item-reference";
 import { formatDayPlanReminderMessage } from "@/lib/day-plan-reminder-message";
 import db from "@/lib/db";
 import { computeRemindAt, isRemindAtInFuture } from "@/lib/remind-at";
@@ -51,19 +55,26 @@ export async function scheduleDayPlanItemReminder({
   remindTime,
   timeZone,
   title,
+  reference,
 }: {
   itemId: string;
   planDate: string;
   remindTime: TargetTime;
   timeZone: string;
   title: string;
+  reference: DayPlanItemReference | null;
 }) {
   const remindAt = computeRemindAt(planDate, remindTime, timeZone);
   if (!isRemindAtInFuture(remindAt)) {
     return { ok: false as const, error: "past" as const };
   }
 
-  const message = formatDayPlanReminderMessage(title, planDate, remindTime);
+  const message = formatDayPlanReminderMessage(
+    title,
+    planDate,
+    remindTime,
+    reference,
+  );
   const scheduleDateUnix = Math.floor(remindAt.getTime() / 1000);
 
   const [existing] = await db
@@ -111,6 +122,8 @@ export async function rescheduleDayPlanItemReminderForPlanDate(
       telegramScheduledMessageId:
         dayPlanItemReminder.telegramScheduledMessageId,
       title: dayPlanItem.title,
+      referenceType: dayPlanItem.referenceType,
+      referenceValue: dayPlanItem.referenceValue,
     })
     .from(dayPlanItemReminder)
     .innerJoin(
@@ -139,6 +152,7 @@ export async function rescheduleDayPlanItemReminderForPlanDate(
     row.title,
     planDate,
     row.remindTime,
+    dayPlanItemReferenceFromColumns(row.referenceType, row.referenceValue),
   );
   const scheduleDateUnix = Math.floor(remindAt.getTime() / 1000);
   const telegramScheduledMessageId = await scheduleSavedMessage(
@@ -161,6 +175,8 @@ export async function getDayPlanItemWithPlanDate(itemId: string) {
       cancelled: dayPlanItem.cancelled,
       planDate: dayPlan.date,
       targetTime: dayPlanItem.targetTime,
+      referenceType: dayPlanItem.referenceType,
+      referenceValue: dayPlanItem.referenceValue,
     })
     .from(dayPlanItem)
     .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))

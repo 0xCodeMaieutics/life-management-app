@@ -9,6 +9,10 @@ import {
   type DeletedDayPlanItem,
 } from "@/lib/day-plan-deleted-item";
 import {
+  dayPlanItemReferenceFromColumns,
+  parseDayPlanItemReferenceFormData,
+} from "@/lib/day-plan-item-reference";
+import {
   cancelDayPlanItemReminderByItemId,
   rescheduleDayPlanItemReminderForPlanDate,
 } from "@/lib/day-plan-reminders";
@@ -106,11 +110,14 @@ export async function createDayPlanItem(
       targetTime: targetTimeValue === "" ? null : targetTimeValue,
     });
 
-  if (!parsed.success) {
+  const referenceResult = parseDayPlanItemReferenceFormData(formData);
+
+  if (!parsed.success || !referenceResult.success) {
     return { errorMessage: "Invalid day plan item" };
   }
 
   const { planDate, title, targetTime } = parsed.data;
+  const reference = referenceResult.data;
 
   try {
     await db.transaction(async (tx) => {
@@ -131,9 +138,14 @@ export async function createDayPlanItem(
         dayPlanId = createdPlan.id;
       }
 
-      await tx
-        .insert(dayPlanItem)
-        .values({ dayPlanId, title, targetTime, completed: false });
+      await tx.insert(dayPlanItem).values({
+        dayPlanId,
+        title,
+        targetTime,
+        completed: false,
+        referenceType: reference?.type ?? null,
+        referenceValue: reference?.value ?? null,
+      });
     });
 
     revalidatePath("/day-plan");
@@ -376,6 +388,60 @@ export async function updateDayPlanItemSchedule(
   }
 }
 
+export async function updateDayPlanItemReference(
+  _previousState: DayPlanItemActionState,
+  formData: FormData,
+): Promise<DayPlanItemActionState> {
+  const idResult = z.uuid().safeParse(formData.get("itemId"));
+  const referenceResult = parseDayPlanItemReferenceFormData(formData);
+
+  if (!idResult.success || !referenceResult.success) {
+    return { errorMessage: "Invalid reference" };
+  }
+
+  const reference = referenceResult.data;
+
+  try {
+    const [stepsLog] = await db
+      .select({ id: dayPlanItemSteps.id })
+      .from(dayPlanItemSteps)
+      .where(eq(dayPlanItemSteps.dayPlanItemId, idResult.data))
+      .limit(1);
+    if (stepsLog !== undefined) {
+      return { errorMessage: "Invalid reference" };
+    }
+
+    const [item] = await db
+      .select({ planDate: dayPlan.date })
+      .from(dayPlanItem)
+      .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
+      .where(eq(dayPlanItem.id, idResult.data))
+      .limit(1);
+    if (item === undefined) {
+      return { errorMessage: "Invalid reference" };
+    }
+
+    await db
+      .update(dayPlanItem)
+      .set({
+        referenceType: reference?.type ?? null,
+        referenceValue: reference?.value ?? null,
+      })
+      .where(eq(dayPlanItem.id, idResult.data));
+
+    await rescheduleDayPlanItemReminderForPlanDate(
+      idResult.data,
+      item.planDate,
+    );
+
+    revalidatePath("/day-plan");
+    return { errorMessage: null };
+  } catch (error) {
+    console.error(error);
+    return { errorMessage: "Could not update the reference" };
+  }
+}
+
 export async function setDayPlanItemCancelled(
   itemId: string,
   cancelled: boolean,
@@ -432,6 +498,8 @@ export async function duplicateDayPlanItem(itemId: string) {
           todoId: dayPlanItem.todoId,
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
+          referenceType: dayPlanItem.referenceType,
+          referenceValue: dayPlanItem.referenceValue,
         })
         .from(dayPlanItem)
         .where(eq(dayPlanItem.id, parsed.data))
@@ -447,6 +515,8 @@ export async function duplicateDayPlanItem(itemId: string) {
         title: item.title,
         targetTime: item.targetTime,
         completed: false,
+        referenceType: item.referenceType,
+        referenceValue: item.referenceValue,
       });
 
       isDuplicated = true;
@@ -483,6 +553,8 @@ export async function copyDayPlanItemToNthDay(
           todoId: dayPlanItem.todoId,
           title: dayPlanItem.title,
           targetTime: dayPlanItem.targetTime,
+          referenceType: dayPlanItem.referenceType,
+          referenceValue: dayPlanItem.referenceValue,
           planDate: dayPlan.date,
         })
         .from(dayPlanItem)
@@ -522,6 +594,8 @@ export async function copyDayPlanItemToNthDay(
         title: item.title,
         targetTime: item.targetTime,
         completed: false,
+        referenceType: item.referenceType,
+        referenceValue: item.referenceValue,
       });
 
       isCopied = true;
@@ -565,6 +639,8 @@ export async function deleteDayPlanItem(itemId: string) {
           targetTime: dayPlanItem.targetTime,
           completed: dayPlanItem.completed,
           cancelled: dayPlanItem.cancelled,
+          referenceType: dayPlanItem.referenceType,
+          referenceValue: dayPlanItem.referenceValue,
         })
         .from(dayPlanItem)
         .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
@@ -583,6 +659,10 @@ export async function deleteDayPlanItem(itemId: string) {
         completed: item.completed,
         cancelled: item.cancelled,
         todoId: item.todoId,
+        reference: dayPlanItemReferenceFromColumns(
+          item.referenceType,
+          item.referenceValue,
+        ),
       });
       if (!snapshot.success) {
         return;
@@ -658,6 +738,8 @@ export async function restoreDayPlanItem(deleted: DeletedDayPlanItem) {
         targetTime: snapshot.targetTime,
         completed: snapshot.completed,
         cancelled: snapshot.cancelled,
+        referenceType: snapshot.reference?.type ?? null,
+        referenceValue: snapshot.reference?.value ?? null,
       });
     });
 

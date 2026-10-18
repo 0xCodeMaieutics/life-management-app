@@ -7,6 +7,7 @@ import {
   createDayPlanItem,
   type DayPlanItemActionState,
 } from "@/app/(app)/day-plan/actions";
+import { DayPlanItemReferenceFields } from "@/components/day-plan-item-reference-fields";
 import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +92,7 @@ export function DayPlanItemCreateDialog({ planDate }: { planDate: string }) {
                 onTargetTimeChange={setTargetTime}
               />
             </div>
+            <DayPlanItemReferenceFields defaultReference={null} />
             {state.errorMessage !== null ? (
               <p className="text-sm text-destructive">{state.errorMessage}</p>
             ) : null}
