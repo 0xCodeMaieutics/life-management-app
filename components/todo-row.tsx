@@ -1,16 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
 
 import type { TodoTargetTime } from "@/lib/target-time";
 
-import { updateTodo, type TodoActionState } from "@/app/(app)/todos/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-
-const initialState: TodoActionState = { errorMessage: null };
+import { useTRPC } from "@/trpc/client";
 
 export type TodoRowData = {
   id: string;
@@ -27,9 +27,12 @@ export function TodoRow({
   selected?: boolean;
   onSelect: () => void;
 }) {
-  const [state, formAction, isPending] = useActionState(
-    updateTodo,
-    initialState,
+  const trpc = useTRPC();
+  const router = useRouter();
+  const updateTodo = useMutation(
+    trpc.todo.update.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
   );
   const [title, setTitle] = useState(initialTodo.title);
   const [targetTime, setTargetTime] = useState(initialTodo.targetTime);
@@ -38,6 +41,11 @@ export function TodoRow({
     setTitle(initialTodo.title);
     setTargetTime(initialTodo.targetTime);
   }, [initialTodo.title, initialTodo.targetTime]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    updateTodo.mutate({ id: initialTodo.id, title, targetTime });
+  }
 
   return (
     <li
@@ -48,8 +56,7 @@ export function TodoRow({
         selected && "border-primary/50",
       )}
     >
-      <form action={formAction} className="flex flex-col gap-3">
-        <input type="hidden" name="id" value={initialTodo.id} />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="flex flex-1 flex-col gap-2">
             <Label htmlFor={`todo-title-${initialTodo.id}`}>Title</Label>
@@ -73,12 +80,20 @@ export function TodoRow({
               onChange={(event) => setTargetTime(event.target.value)}
             />
           </div>
-          <Button type="submit" disabled={isPending} className="sm:mb-0.5">
-            {isPending ? "Saving…" : "Save"}
+          <Button
+            type="submit"
+            disabled={updateTodo.isPending}
+            className="sm:mb-0.5"
+          >
+            {updateTodo.isPending ? "Saving…" : "Save"}
           </Button>
         </div>
-        {state.errorMessage !== null ? (
-          <p className="text-sm text-destructive">{state.errorMessage}</p>
+        {updateTodo.error !== null ? (
+          <p className="text-sm text-destructive">
+            {updateTodo.error.data?.code === "BAD_REQUEST"
+              ? "Invalid todo"
+              : "Could not update todo"}
+          </p>
         ) : null}
       </form>
     </li>

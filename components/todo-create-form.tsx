@@ -1,9 +1,10 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useState } from "react";
 
-import { createTodo, type TodoActionState } from "@/app/(app)/todos/actions";
 import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,30 +15,39 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const initialState: TodoActionState = { errorMessage: null };
+import { useTRPC } from "@/trpc/client";
 
 export function TodoCreateForm() {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [targetTime, setTargetTime] = useState("");
-  const [state, formAction, isPending] = useActionState(
-    async (previousState: TodoActionState, formData: FormData) => {
-      const result = await createTodo(previousState, formData);
-      if (result.errorMessage === null) {
+  const createTodo = useMutation(
+    trpc.todo.create.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
         setOpen(false);
-      }
-      return result;
-    },
-    initialState,
+      },
+    }),
   );
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setFormKey((key) => key + 1);
       setTargetTime("");
+      createTodo.reset();
     }
     setOpen(nextOpen);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = new FormData(event.currentTarget).get("title");
+    createTodo.mutate({
+      title: typeof title === "string" ? title : "",
+      targetTime,
+    });
   }
 
   useEffect(() => {
@@ -65,7 +75,7 @@ export function TodoCreateForm() {
         <DialogContent className="sm:max-w-md">
           <form
             key={formKey}
-            action={formAction}
+            onSubmit={handleSubmit}
             className="flex flex-col gap-4"
           >
             <DialogHeader>
@@ -96,11 +106,15 @@ export function TodoCreateForm() {
                 onTargetTimeChange={setTargetTime}
               />
             </div>
-            {state.errorMessage !== null ? (
-              <p className="text-sm text-destructive">{state.errorMessage}</p>
+            {createTodo.error !== null ? (
+              <p className="text-sm text-destructive">
+                {createTodo.error.data?.code === "BAD_REQUEST"
+                  ? "Invalid todo"
+                  : "Could not create todo"}
+              </p>
             ) : null}
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Adding…" : "Add todo"}
+            <Button type="submit" disabled={createTodo.isPending}>
+              {createTodo.isPending ? "Adding…" : "Add todo"}
             </Button>
           </form>
         </DialogContent>
