@@ -1,15 +1,13 @@
 "use client";
 
-import { Effect } from "effect";
+import { useMutation } from "@tanstack/react-query";
 import { PencilIcon } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import {
-  updateMatterTitle,
-  type UpdateTitleState,
-} from "@/app/(app)/matter/[matterId]/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTRPC } from "@/trpc/client";
 
 export function MatterTitleForm({
   matterId,
@@ -18,24 +16,32 @@ export function MatterTitleForm({
   matterId: string;
   title: string | null;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [state, formAction, isPending] = useActionState(
-    (previousState: UpdateTitleState, formData: FormData) =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          const result = yield* Effect.tryPromise(() =>
-            updateMatterTitle(previousState, formData),
-          );
-          if (result.errorMessage === null) {
-            setIsEditing(false);
-          }
-          return result;
-        }).pipe(
-          Effect.orElseSucceed(() => ({ errorMessage: "Request failed" })),
-        ),
-      ),
-    { errorMessage: null },
+  const updateMatterTitle = useMutation(
+    trpc.matter.updateTitle.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        setIsEditing(false);
+      },
+    }),
   );
+  const errorMessage =
+    updateMatterTitle.error === null
+      ? null
+      : updateMatterTitle.error.data?.code === "BAD_REQUEST"
+        ? "Bad request"
+        : "Internal server error";
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextTitle = new FormData(event.currentTarget).get("title");
+    updateMatterTitle.mutate({
+      matterId,
+      title: typeof nextTitle === "string" ? nextTitle : "",
+    });
+  }
 
   if (!isEditing) {
     return (
@@ -47,7 +53,10 @@ export function MatterTitleForm({
           variant="ghost"
           size="icon-sm"
           aria-label="Edit title"
-          onClick={() => setIsEditing(true)}
+          onClick={() => {
+            updateMatterTitle.reset();
+            setIsEditing(true);
+          }}
         >
           <PencilIcon />
         </Button>
@@ -56,33 +65,32 @@ export function MatterTitleForm({
   }
 
   return (
-    <form action={formAction} className="flex flex-1 flex-col gap-y-1">
-      <input type="hidden" name="matterId" value={matterId} />
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-y-1">
       <div className="flex items-center gap-x-2">
         <Input
           name="title"
           defaultValue={title ?? ""}
           aria-label="Title"
-          aria-invalid={state.errorMessage !== null}
+          aria-invalid={errorMessage !== null}
           maxLength={80}
           required
           autoFocus
         />
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={updateMatterTitle.isPending}>
           Save
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          disabled={isPending}
+          disabled={updateMatterTitle.isPending}
           onClick={() => setIsEditing(false)}
         >
           Cancel
         </Button>
       </div>
-      {state.errorMessage !== null && (
-        <p className="text-xs text-destructive">{state.errorMessage}</p>
+      {errorMessage !== null && (
+        <p className="text-xs text-destructive">{errorMessage}</p>
       )}
     </form>
   );
