@@ -6,7 +6,7 @@ import * as z from "zod";
 import { env } from "@/env";
 import db from "@/lib/db";
 import s3 from "@/lib/s3";
-import { matter, matterCategory } from "@/lib/schema";
+import { matter, matterCategories } from "@/lib/schema";
 
 const MODEL = "mistral-ocr-2512";
 const TYPESAFE_URL = "https://api.typesafe.ai/v1/systemone";
@@ -14,7 +14,7 @@ const TYPESAFE_MODEL = "jev-latest";
 
 const categorisationSchema = z.object({
   answers: z.object({
-    category: z.object({ choice: z.enum(matterCategory.enumValues) }),
+    category: z.object({ choice: z.enum(matterCategories) }),
   }),
 });
 
