@@ -16,6 +16,7 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:migrate:prod": "tsx scripts/db-migrate.ts --prod",
     "db:reset": "tsx scripts/db-reset.ts && pnpm db:migrate",
+    "db:seed": "tsx scripts/db-seed.ts",
     "db:studio": "drizzle-kit studio",
     "telegram:session": "tsx scripts/telegram-session.ts",
     "codegen": "pnpm generate",
