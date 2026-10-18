@@ -1,6 +1,12 @@
 "use client";
 
-import { Copy, Link as LinkIcon, Mail, Phone } from "lucide-react";
+import {
+  Copy,
+  Link as LinkIcon,
+  Mail,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -75,6 +81,18 @@ export function DayPlanItemReferenceLink({
           >
             <Phone />
             Call
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              window.open(
+                `https://wa.me/${reference.value.replace(/\D/g, "")}`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+          >
+            <MessageCircle />
+            WhatsApp
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
