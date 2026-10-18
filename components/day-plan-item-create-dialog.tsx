@@ -1,12 +1,10 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import {
-  createDayPlanItem,
-  type DayPlanItemActionState,
-} from "@/app/(app)/day-plan/actions";
 import { DayPlanItemReferenceFields } from "@/components/day-plan-item-reference-fields";
 import { TargetTimeDaySegmentPicker } from "@/components/target-time-day-segment-picker";
 import { Button } from "@/components/ui/button";
@@ -18,30 +16,43 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const initialState: DayPlanItemActionState = { errorMessage: null };
+import { dayPlanItemReferenceInputFromFormData } from "@/lib/day-plan-item-reference";
+import { useTRPC } from "@/trpc/client";
 
 export function DayPlanItemCreateDialog({ planDate }: { planDate: string }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const [targetTime, setTargetTime] = useState("");
-  const [state, formAction, isPending] = useActionState(
-    async (previousState: DayPlanItemActionState, formData: FormData) => {
-      const result = await createDayPlanItem(previousState, formData);
-      if (result.errorMessage === null) {
+  const createDayPlanItem = useMutation(
+    trpc.dayPlan.createItem.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
         setOpen(false);
-      }
-      return result;
-    },
-    initialState,
+      },
+    }),
   );
 
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setFormKey((key) => key + 1);
       setTargetTime("");
+      createDayPlanItem.reset();
     }
     setOpen(nextOpen);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const title = formData.get("title");
+    createDayPlanItem.mutate({
+      planDate,
+      title: typeof title === "string" ? title : "",
+      targetTime: targetTime === "" ? null : targetTime,
+      reference: dayPlanItemReferenceInputFromFormData(formData),
+    });
   }
 
   return (
@@ -59,10 +70,9 @@ export function DayPlanItemCreateDialog({ planDate }: { planDate: string }) {
         <DialogContent className="sm:max-w-md">
           <form
             key={formKey}
-            action={formAction}
+            onSubmit={handleSubmit}
             className="flex flex-col gap-4"
           >
-            <input type="hidden" name="planDate" value={planDate} />
             <DialogHeader>
               <DialogTitle>New day plan item</DialogTitle>
             </DialogHeader>
@@ -93,11 +103,15 @@ export function DayPlanItemCreateDialog({ planDate }: { planDate: string }) {
               />
             </div>
             <DayPlanItemReferenceFields defaultReference={null} />
-            {state.errorMessage !== null ? (
-              <p className="text-sm text-destructive">{state.errorMessage}</p>
+            {createDayPlanItem.error !== null ? (
+              <p className="text-sm text-destructive">
+                {createDayPlanItem.error.data?.code === "BAD_REQUEST"
+                  ? "Invalid day plan item"
+                  : "Could not create day plan item"}
+              </p>
             ) : null}
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Adding…" : "Add item"}
+            <Button type="submit" disabled={createDayPlanItem.isPending}>
+              {createDayPlanItem.isPending ? "Adding…" : "Add item"}
             </Button>
           </form>
         </DialogContent>

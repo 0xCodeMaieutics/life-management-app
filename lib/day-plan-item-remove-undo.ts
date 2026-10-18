@@ -2,12 +2,13 @@ import { toast } from "sonner";
 
 import type { DeletedDayPlanItem } from "@/lib/day-plan-deleted-item";
 
-import { restoreDayPlanItem } from "@/app/(app)/day-plan/actions";
+import { trpcClient } from "@/trpc/client";
 
 export const DAY_PLAN_ITEM_REMOVE_UNDO_MS = 5000;
 
 type PendingRemoveUndo = {
   deleted: DeletedDayPlanItem;
+  onRestored: () => void;
   expiresAt: number;
   toastId: string | number;
 };
@@ -33,17 +34,20 @@ function clearPendingRemoveUndo(deletedId: string) {
   pendingRemoveUndo = null;
 }
 
-async function runRestore(deleted: DeletedDayPlanItem): Promise<boolean> {
+async function runRestore(
+  deleted: DeletedDayPlanItem,
+  onRestored: () => void,
+): Promise<boolean> {
   if (restoreInFlight) {
     return false;
   }
   restoreInFlight = true;
   try {
-    const result = await restoreDayPlanItem(deleted);
-    if (result.ok) {
-      clearPendingRemoveUndo(deleted.id);
-      return true;
-    }
+    await trpcClient.dayPlan.restoreItem.mutate(deleted);
+    clearPendingRemoveUndo(deleted.id);
+    onRestored();
+    return true;
+  } catch {
     toast.error("Could not restore todo");
     return false;
   } finally {
@@ -64,13 +68,16 @@ export function getPendingDayPlanItemRemoveUndo(): DeletedDayPlanItem | null {
 
 export async function undoPendingDayPlanItemRemove(): Promise<boolean> {
   const deleted = getPendingDayPlanItemRemoveUndo();
-  if (deleted === null) {
+  if (deleted === null || pendingRemoveUndo === null) {
     return false;
   }
-  return runRestore(deleted);
+  return runRestore(deleted, pendingRemoveUndo.onRestored);
 }
 
-export function showDayPlanItemRemoveUndoToast(deleted: DeletedDayPlanItem) {
+export function showDayPlanItemRemoveUndoToast(
+  deleted: DeletedDayPlanItem,
+  onRestored: () => void,
+) {
   if (pendingRemoveUndo !== null) {
     toast.dismiss(pendingRemoveUndo.toastId);
   }
@@ -84,13 +91,14 @@ export function showDayPlanItemRemoveUndoToast(deleted: DeletedDayPlanItem) {
     action: {
       label: "Undo",
       onClick: () => {
-        void runRestore(deleted);
+        void runRestore(deleted, onRestored);
       },
     },
   });
 
   pendingRemoveUndo = {
     deleted,
+    onRestored,
     expiresAt: Date.now() + DAY_PLAN_ITEM_REMOVE_UNDO_MS,
     toastId,
   };

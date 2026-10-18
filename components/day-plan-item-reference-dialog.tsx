@@ -1,11 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent } from "react";
 
-import {
-  type DayPlanItemActionState,
-  updateDayPlanItemReference,
-} from "@/app/(app)/day-plan/actions";
 import { DayPlanItemReferenceFields } from "@/components/day-plan-item-reference-fields";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { dayPlanItemReferenceInputFromFormData } from "@/lib/day-plan-item-reference";
 import { type DayPlanItem } from "@/lib/day-segments";
-
-const initialState: DayPlanItemActionState = { errorMessage: null };
+import { useTRPC } from "@/trpc/client";
 
 export function DayPlanItemReferenceDialog({
   item,
@@ -28,29 +26,42 @@ export function DayPlanItemReferenceDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [state, formAction, isPending] = useActionState(
-    async (previousState: DayPlanItemActionState, formData: FormData) => {
-      const result = await updateDayPlanItemReference(previousState, formData);
-      if (result.errorMessage === null) {
+  const trpc = useTRPC();
+  const router = useRouter();
+  const updateReference = useMutation(
+    trpc.dayPlan.updateItemReference.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
         onOpenChange(false);
-      }
-      return result;
-    },
-    initialState,
+      },
+    }),
   );
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    updateReference.mutate({
+      itemId: item.id,
+      reference: dayPlanItemReferenceInputFromFormData(
+        new FormData(event.currentTarget),
+      ),
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <form action={formAction} className="flex flex-col gap-4">
-          <input type="hidden" name="itemId" value={item.id} />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Edit reference</DialogTitle>
           </DialogHeader>
           <p className="text-sm font-medium">{item.title}</p>
           <DayPlanItemReferenceFields defaultReference={item.reference} />
-          {state.errorMessage !== null ? (
-            <p className="text-sm text-destructive">{state.errorMessage}</p>
+          {updateReference.error !== null ? (
+            <p className="text-sm text-destructive">
+              {updateReference.error.data?.code === "INTERNAL_SERVER_ERROR"
+                ? "Could not update the reference"
+                : "Invalid reference"}
+            </p>
           ) : null}
           <DialogFooter>
             <Button
@@ -60,8 +71,8 @@ export function DayPlanItemReferenceDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : "Save"}
+            <Button type="submit" disabled={updateReference.isPending}>
+              {updateReference.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

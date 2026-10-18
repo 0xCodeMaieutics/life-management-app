@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { copyDayPlanItemToNthDay } from "@/app/(app)/day-plan/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type DayPlanItem } from "@/lib/day-segments";
+import { useTRPC } from "@/trpc/client";
 
 const MIN_DAY_OFFSET = 1;
 const MAX_DAY_OFFSET = 120;
@@ -48,9 +50,20 @@ export function DayPlanItemCopyNthDayDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [dayOffsetInput, setDayOffsetInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const copyToNthDay = useMutation(
+    trpc.dayPlan.copyItemToNthDay.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        handleOpenChange(false);
+      },
+      onError: () =>
+        setErrorMessage("Could not copy the item. Please try again."),
+    }),
+  );
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -69,14 +82,7 @@ export function DayPlanItemCopyNthDayDialog({
     }
 
     setErrorMessage(null);
-    startTransition(async () => {
-      const result = await copyDayPlanItemToNthDay(item.id, parsed.dayOffset);
-      if (!result.ok) {
-        setErrorMessage("Could not copy the item. Please try again.");
-        return;
-      }
-      handleOpenChange(false);
-    });
+    copyToNthDay.mutate({ itemId: item.id, dayOffset: parsed.dayOffset });
   }
 
   return (
@@ -117,8 +123,8 @@ export function DayPlanItemCopyNthDayDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Copying…" : "Copy"}
+            <Button type="submit" disabled={copyToNthDay.isPending}>
+              {copyToNthDay.isPending ? "Copying…" : "Copy"}
             </Button>
           </DialogFooter>
         </form>

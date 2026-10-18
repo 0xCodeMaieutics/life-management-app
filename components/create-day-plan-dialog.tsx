@@ -1,11 +1,11 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
-import { addTodosToDayPlan, createDayPlan } from "@/app/(app)/day-plan/actions";
 import { type TodoRowData } from "@/components/todo-row";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatTargetTimeForDisplay } from "@/lib/target-time";
+import { useTRPC } from "@/trpc/client";
 
 type DayPlanDialogMode = "create" | "add";
 
@@ -64,13 +65,26 @@ export function CreateDayPlanDialog({
   onOpenChange: (open: boolean) => void;
   mode?: DayPlanDialogMode;
 }) {
+  const trpc = useTRPC();
   const router = useRouter();
   const copy = DIALOG_COPY[mode];
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() =>
     initialSelection(mode, todos),
   );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const mutationOptions = {
+    onSuccess: () => {
+      router.refresh();
+      onOpenChange(false);
+    },
+  };
+  const createDayPlan = useMutation(
+    trpc.dayPlan.create.mutationOptions(mutationOptions),
+  );
+  const addTodosToDayPlan = useMutation(
+    trpc.dayPlan.addTodos.mutationOptions(mutationOptions),
+  );
+  const submit = mode === "create" ? createDayPlan : addTodosToDayPlan;
+  const isPending = submit.isPending;
 
   function toggleTodo(id: string) {
     setSelectedIds((previous) => {
@@ -87,7 +101,7 @@ export function CreateDayPlanDialog({
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       setSelectedIds(initialSelection(mode, todos));
-      setErrorMessage(null);
+      submit.reset();
     }
     onOpenChange(nextOpen);
   }
@@ -97,17 +111,7 @@ export function CreateDayPlanDialog({
       return;
     }
 
-    const submit = mode === "create" ? createDayPlan : addTodosToDayPlan;
-
-    startTransition(async () => {
-      const result = await submit(planDate, [...selectedIds]);
-      if (!result.ok) {
-        setErrorMessage(copy.errorMessage);
-        return;
-      }
-      onOpenChange(false);
-      router.refresh();
-    });
+    submit.mutate({ planDate, todoIds: [...selectedIds] });
   }
 
   const canConfirm = selectedIds.size > 0 && !isPending;
@@ -139,8 +143,8 @@ export function CreateDayPlanDialog({
             </li>
           ))}
         </ul>
-        {errorMessage !== null ? (
-          <p className="text-sm text-destructive">{errorMessage}</p>
+        {submit.error !== null ? (
+          <p className="text-sm text-destructive">{copy.errorMessage}</p>
         ) : null}
         <DialogFooter>
           <Button
