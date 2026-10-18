@@ -1,10 +1,10 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-import { markReadFinished } from "@/app/(app)/later-reads/actions";
-import { cancelReadReminder } from "@/app/(app)/later-reads/reminder-actions";
 import { ReadEditDialog } from "@/components/read-edit-dialog";
 import { ReadFinishConfirmDialog } from "@/components/read-finish-confirm-dialog";
 import { ReadRemindDialog } from "@/components/read-remind-dialog";
@@ -23,23 +23,34 @@ import {
   readRemindDialogLabel,
 } from "@/lib/read-reminder-ui";
 import { cn } from "@/lib/utils";
+import { useTRPC } from "@/trpc/client";
 
 export type ReadRowData = ReadWithReminder;
 
 export function ReadRow({ read }: { read: ReadRowData }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [remindOpen, setRemindOpen] = useState(false);
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const markReadFinished = useMutation(
+    trpc.read.markFinished.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
+  const cancelReadReminder = useMutation(
+    trpc.read.cancelReminder.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
+  const isPending = markReadFinished.isPending || cancelReadReminder.isPending;
 
   const hasTitle = read.title !== null && read.title !== "";
   const hasPendingReminder = readHasPendingReminder(read);
   const canScheduleReminder = readCanScheduleReminder();
 
   function markFinished() {
-    startTransition(async () => {
-      await markReadFinished(read.id);
-    });
+    markReadFinished.mutate({ id: read.id });
   }
 
   function requestMarkFinished() {
@@ -102,9 +113,7 @@ export function ReadRow({ read }: { read: ReadRowData }) {
               <ContextMenuItem
                 variant="destructive"
                 onClick={() => {
-                  startTransition(async () => {
-                    await cancelReadReminder(read.id);
-                  });
+                  cancelReadReminder.mutate({ readId: read.id });
                 }}
               >
                 Cancel reminder

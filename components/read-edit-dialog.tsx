@@ -1,8 +1,9 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
-import { updateReadFields } from "@/app/(app)/later-reads/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTRPC } from "@/trpc/client";
 
 export function ReadEditDialog({
   read,
@@ -23,22 +25,22 @@ export function ReadEditDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const trpc = useTRPC();
+  const router = useRouter();
   const [url, setUrl] = useState(read.url);
   const [title, setTitle] = useState(read.title ?? "");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const updateRead = useMutation(
+    trpc.read.update.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        onOpenChange(false);
+      },
+    }),
+  );
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    startTransition(async () => {
-      const result = await updateReadFields(read.id, url, title);
-      if (!result.ok) {
-        setErrorMessage("Could not save link. Please try again.");
-        return;
-      }
-      onOpenChange(false);
-    });
+    updateRead.mutate({ id: read.id, url, title });
   }
 
   const previewLabel =
@@ -72,8 +74,10 @@ export function ReadEditDialog({
               onChange={(event) => setTitle(event.target.value)}
             />
           </div>
-          {errorMessage !== null ? (
-            <p className="text-sm text-destructive">{errorMessage}</p>
+          {updateRead.error !== null ? (
+            <p className="text-sm text-destructive">
+              Could not save link. Please try again.
+            </p>
           ) : null}
           <DialogFooter>
             <Button
@@ -83,8 +87,8 @@ export function ReadEditDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : "Save"}
+            <Button type="submit" disabled={updateRead.isPending}>
+              {updateRead.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>
