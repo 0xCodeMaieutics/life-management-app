@@ -100,20 +100,45 @@ export function DayPlanItemReferenceLink({
   }
 
   return (
-    <button
-      type="button"
-      title={`Copy ${reference.value}`}
-      className={REFERENCE_LINK_CLASS_NAME}
-      onClick={(event) => {
-        event.stopPropagation();
-        navigator.clipboard.writeText(reference.value).then(
-          () => toast.success("Email copied"),
-          () => toast.error("Could not copy"),
-        );
-      }}
-    >
-      <Mail className="size-3 shrink-0" />
-      <span className="truncate">{label}</span>
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        title={reference.value}
+        className={REFERENCE_LINK_CLASS_NAME}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Mail className="size-3 shrink-0" />
+        <span className="truncate">{label}</span>
+      </DropdownMenuTrigger>
+      {/* Portaled, but React events still bubble to the row's select handler. */}
+      <DropdownMenuContent
+        className="w-auto"
+        onClick={(event) => event.stopPropagation()}
+        onContextMenu={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuItem
+          onClick={() => {
+            navigator.clipboard.writeText(reference.value).then(
+              () => toast.success("Email copied"),
+              () => toast.error("Could not copy"),
+            );
+          }}
+        >
+          <Copy />
+          Copy
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            window.open(
+              `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(reference.value)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          }}
+        >
+          <Mail />
+          Outlook
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
