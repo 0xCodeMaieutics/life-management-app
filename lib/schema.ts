@@ -52,6 +52,8 @@ export const todo = sqliteTable("todo", {
   id: id(),
   title: text().notNull(),
   targetTime: text("target_time").notNull().$type<TodoTargetTime>(),
+  followUpMinutes: integer("follow_up_minutes"),
+  followUpMessage: text("follow_up_message"),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date()),
@@ -76,6 +78,20 @@ export const dayPlanItem = sqliteTable("day_plan_item", {
     enum: DAY_PLAN_ITEM_REFERENCE_TYPES,
   }),
   referenceValue: text("reference_value"),
+  followUpMinutes: integer("follow_up_minutes"),
+  followUpMessage: text("follow_up_message"),
+});
+
+export const dayPlanItemFollowUp = sqliteTable("day_plan_item_follow_up", {
+  id: id(),
+  dayPlanItemId: text("day_plan_item_id")
+    .notNull()
+    .unique()
+    .references(() => dayPlanItem.id, { onDelete: "cascade" }),
+  sendAt: timestamp("send_at").notNull(),
+  telegramScheduledMessageId: integer(
+    "telegram_scheduled_message_id",
+  ).notNull(),
 });
 
 export const dayPlanItemReminder = sqliteTable("day_plan_item_reminder", {

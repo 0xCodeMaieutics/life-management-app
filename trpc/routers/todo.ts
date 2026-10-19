@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import * as z from "zod";
 
 import db from "@/lib/db";
+import { followUpSchema } from "@/lib/follow-up";
 import { todo } from "@/lib/schema";
 import { targetTimeSchema } from "@/lib/target-time";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
@@ -22,6 +23,18 @@ export const todoRouter = createTRPCRouter({
     .input(todoFieldsSchema.extend({ id: z.uuid() }))
     .mutation(async ({ input: { id, ...values } }) => {
       await db.update(todo).set(values).where(eq(todo.id, id));
+    }),
+
+  setFollowUp: baseProcedure
+    .input(z.object({ id: z.uuid(), followUp: followUpSchema.nullable() }))
+    .mutation(async ({ input }) => {
+      await db
+        .update(todo)
+        .set({
+          followUpMinutes: input.followUp?.minutes ?? null,
+          followUpMessage: input.followUp?.message ?? null,
+        })
+        .where(eq(todo.id, input.id));
     }),
 
   delete: baseProcedure
