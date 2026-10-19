@@ -4,6 +4,13 @@ import * as z from "zod";
 
 import { deletedDayPlanItemSchema } from "@/lib/day-plan-deleted-item";
 import {
+  cancelDayPlanItemFollowUp,
+  hasDayPlanItemFollowUpStarted,
+  isDayPlanItemFollowUpPending,
+  startDayPlanItemFollowUp,
+  stopPendingDayPlanItemFollowUp,
+} from "@/lib/day-plan-follow-ups";
+import {
   dayPlanItemReferenceFromColumns,
   dayPlanItemReferenceSchema,
 } from "@/lib/day-plan-item-reference";
@@ -14,9 +21,16 @@ import {
   scheduleDayPlanItemReminder,
 } from "@/lib/day-plan-reminders";
 import db from "@/lib/db";
+import { followUpFromColumns, followUpSchema } from "@/lib/follow-up";
 import { isValidPlanDateString, shiftLocalDateString } from "@/lib/plan-date";
 import { ianaTimeZoneSchema } from "@/lib/remind-at";
-import { dayPlan, dayPlanItem, dayPlanItemSteps, todo } from "@/lib/schema";
+import {
+  dayPlan,
+  dayPlanItem,
+  dayPlanItemFollowUp,
+  dayPlanItemSteps,
+  todo,
+} from "@/lib/schema";
 import {
   dayPlanItemTargetTimeSchema,
   targetTimeSchema,
@@ -58,6 +72,8 @@ export const dayPlanRouter = createTRPCRouter({
           id: todo.id,
           title: todo.title,
           targetTime: todo.targetTime,
+          followUpMinutes: todo.followUpMinutes,
+          followUpMessage: todo.followUpMessage,
         })
         .from(todo)
         .where(inArray(todo.id, input.todoIds))
@@ -80,6 +96,8 @@ export const dayPlanRouter = createTRPCRouter({
             title: row.title,
             targetTime: row.targetTime,
             completed: false,
+            followUpMinutes: row.followUpMinutes,
+            followUpMessage: row.followUpMessage,
           })),
         );
       });
@@ -103,6 +121,8 @@ export const dayPlanRouter = createTRPCRouter({
           id: todo.id,
           title: todo.title,
           targetTime: todo.targetTime,
+          followUpMinutes: todo.followUpMinutes,
+          followUpMessage: todo.followUpMessage,
         })
         .from(todo)
         .where(inArray(todo.id, input.todoIds))
@@ -119,6 +139,8 @@ export const dayPlanRouter = createTRPCRouter({
           title: row.title,
           targetTime: row.targetTime,
           completed: false,
+          followUpMinutes: row.followUpMinutes,
+          followUpMessage: row.followUpMessage,
         })),
       );
     }),
@@ -207,7 +229,12 @@ export const dayPlanRouter = createTRPCRouter({
     }),
 
   setItemCompleted: baseProcedure
-    .input(itemIdInputSchema.extend({ completed: z.boolean() }))
+    .input(
+      itemIdInputSchema.extend({
+        completed: z.boolean(),
+        timeZone: ianaTimeZoneSchema,
+      }),
+    )
     .mutation(async ({ input }) => {
       const [stepsLog] = await db
         .select({ id: dayPlanItemSteps.id })
@@ -218,18 +245,57 @@ export const dayPlanRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST" });
       }
 
-      if (input.completed) {
-        await cancelDayPlanItemReminderByItemId(input.itemId);
+      if (!input.completed) {
+        await stopPendingDayPlanItemFollowUp(input.itemId);
+        await db
+          .update(dayPlanItem)
+          .set({ completed: false })
+          .where(eq(dayPlanItem.id, input.itemId));
+        return { followUpSendAt: null, hasFollowUpFailed: false };
       }
 
-      await db
+      await cancelDayPlanItemReminderByItemId(input.itemId);
+
+      const [item] = await db
         .update(dayPlanItem)
-        .set(
-          input.completed
-            ? { completed: true, cancelled: false }
-            : { completed: false },
-        )
-        .where(eq(dayPlanItem.id, input.itemId));
+        .set({ completed: true, cancelled: false })
+        .where(eq(dayPlanItem.id, input.itemId))
+        .returning({
+          title: dayPlanItem.title,
+          followUpMinutes: dayPlanItem.followUpMinutes,
+          followUpMessage: dayPlanItem.followUpMessage,
+        });
+      if (item === undefined) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      const followUp = followUpFromColumns(
+        item.followUpMinutes,
+        item.followUpMessage,
+      );
+      if (
+        followUp === null ||
+        !isTelegramConfigured() ||
+        (await hasDayPlanItemFollowUpStarted(input.itemId))
+      ) {
+        return { followUpSendAt: null, hasFollowUpFailed: false };
+      }
+
+      try {
+        const sendAt = await startDayPlanItemFollowUp({
+          itemId: input.itemId,
+          title: item.title,
+          followUp,
+          timeZone: input.timeZone,
+        });
+        return {
+          followUpSendAt: sendAt.toISOString(),
+          hasFollowUpFailed: false,
+        };
+      } catch (error) {
+        console.error("Failed to schedule follow-up", error);
+        return { followUpSendAt: null, hasFollowUpFailed: true };
+      }
     }),
 
   setItemCancelled: baseProcedure
@@ -370,6 +436,8 @@ export const dayPlanRouter = createTRPCRouter({
             targetTime: dayPlanItem.targetTime,
             referenceType: dayPlanItem.referenceType,
             referenceValue: dayPlanItem.referenceValue,
+            followUpMinutes: dayPlanItem.followUpMinutes,
+            followUpMessage: dayPlanItem.followUpMessage,
           })
           .from(dayPlanItem)
           .where(eq(dayPlanItem.id, input.itemId))
@@ -387,6 +455,8 @@ export const dayPlanRouter = createTRPCRouter({
           completed: false,
           referenceType: item.referenceType,
           referenceValue: item.referenceValue,
+          followUpMinutes: item.followUpMinutes,
+          followUpMessage: item.followUpMessage,
         });
       });
     }),
@@ -404,6 +474,8 @@ export const dayPlanRouter = createTRPCRouter({
             targetTime: dayPlanItem.targetTime,
             referenceType: dayPlanItem.referenceType,
             referenceValue: dayPlanItem.referenceValue,
+            followUpMinutes: dayPlanItem.followUpMinutes,
+            followUpMessage: dayPlanItem.followUpMessage,
             planDate: dayPlan.date,
           })
           .from(dayPlanItem)
@@ -447,6 +519,8 @@ export const dayPlanRouter = createTRPCRouter({
             completed: false,
             referenceType: item.referenceType,
             referenceValue: item.referenceValue,
+            followUpMinutes: item.followUpMinutes,
+            followUpMessage: item.followUpMessage,
           })
           .returning({ id: dayPlanItem.id });
 
@@ -458,6 +532,10 @@ export const dayPlanRouter = createTRPCRouter({
     .input(itemIdInputSchema)
     .mutation(async ({ input }) => {
       await cancelDayPlanItemReminderByItemId(input.itemId);
+      const hasFollowUpStarted = await hasDayPlanItemFollowUpStarted(
+        input.itemId,
+      );
+      await stopPendingDayPlanItemFollowUp(input.itemId);
 
       return db.transaction(async (tx) => {
         const [item] = await tx
@@ -472,6 +550,8 @@ export const dayPlanRouter = createTRPCRouter({
             cancelled: dayPlanItem.cancelled,
             referenceType: dayPlanItem.referenceType,
             referenceValue: dayPlanItem.referenceValue,
+            followUpMinutes: dayPlanItem.followUpMinutes,
+            followUpMessage: dayPlanItem.followUpMessage,
           })
           .from(dayPlanItem)
           .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
@@ -494,6 +574,9 @@ export const dayPlanRouter = createTRPCRouter({
             item.referenceType,
             item.referenceValue,
           ),
+          followUp: hasFollowUpStarted
+            ? null
+            : followUpFromColumns(item.followUpMinutes, item.followUpMessage),
         });
         if (!snapshot.success) {
           throw new TRPCError({
@@ -558,8 +641,56 @@ export const dayPlanRouter = createTRPCRouter({
           cancelled: snapshot.cancelled,
           referenceType: snapshot.reference?.type ?? null,
           referenceValue: snapshot.reference?.value ?? null,
+          followUpMinutes: snapshot.followUp?.minutes ?? null,
+          followUpMessage: snapshot.followUp?.message ?? null,
         });
       });
+    }),
+
+  setItemFollowUp: baseProcedure
+    .input(itemIdInputSchema.extend({ followUp: followUpSchema.nullable() }))
+    .mutation(async ({ input }) => {
+      const [item] = await db
+        .select({
+          completed: dayPlanItem.completed,
+          stepsId: dayPlanItemSteps.id,
+        })
+        .from(dayPlanItem)
+        .leftJoin(
+          dayPlanItemSteps,
+          eq(dayPlanItemSteps.dayPlanItemId, dayPlanItem.id),
+        )
+        .where(eq(dayPlanItem.id, input.itemId))
+        .limit(1);
+      if (item === undefined) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (
+        item.completed ||
+        item.stepsId !== null ||
+        (await isDayPlanItemFollowUpPending(input.itemId))
+      ) {
+        throw new TRPCError({ code: "BAD_REQUEST" });
+      }
+
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(dayPlanItemFollowUp)
+          .where(eq(dayPlanItemFollowUp.dayPlanItemId, input.itemId));
+        await tx
+          .update(dayPlanItem)
+          .set({
+            followUpMinutes: input.followUp?.minutes ?? null,
+            followUpMessage: input.followUp?.message ?? null,
+          })
+          .where(eq(dayPlanItem.id, input.itemId));
+      });
+    }),
+
+  cancelFollowUp: baseProcedure
+    .input(itemIdInputSchema)
+    .mutation(async ({ input }) => {
+      await cancelDayPlanItemFollowUp(input.itemId);
     }),
 
   scheduleReminder: baseProcedure

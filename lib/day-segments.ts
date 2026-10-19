@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 import { type DayPlanItemReference } from "@/lib/day-plan-item-reference";
+import { type FollowUp } from "@/lib/follow-up";
 import {
   type DayPlanItemTargetTime,
   type TargetTime,
@@ -121,6 +122,9 @@ export type DayPlanItemPendingReminder = {
   remindTime: TargetTime;
 };
 
+/** `sendAt` is set while **pending**; a **sent** follow-up is omitted. */
+export type DayPlanItemFollowUp = FollowUp & { sendAt: string | null };
+
 export type DayPlanItem = {
   id: string;
   title: string;
@@ -131,6 +135,7 @@ export type DayPlanItem = {
   todoId: string | null;
   reference: DayPlanItemReference | null;
   pendingReminder: DayPlanItemPendingReminder | null;
+  followUp: DayPlanItemFollowUp | null;
 };
 
 function dayPlanItemSortRank(item: DayPlanItem) {

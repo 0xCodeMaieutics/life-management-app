@@ -17,6 +17,8 @@ import {
   Pencil,
   RotateCcw,
   Square,
+  Timer,
+  TimerOff,
   Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -25,11 +27,13 @@ import { toast } from "sonner";
 
 import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
+import { showDayPlanFollowUpScheduledToast } from "@/components/day-plan-follow-up-toast";
 import { DayPlanItemCopyNthDayDialog } from "@/components/day-plan-item-copy-nth-day-dialog";
 import { DayPlanItemReferenceDialog } from "@/components/day-plan-item-reference-dialog";
 import { DayPlanItemReferenceLink } from "@/components/day-plan-item-reference-link";
 import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
 import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
+import { FollowUpDialog } from "@/components/follow-up-dialog";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -55,6 +59,7 @@ import {
   type DayPlanItem,
   type DaySegmentConfig,
 } from "@/lib/day-segments";
+import { formatFollowUpDuration, formatFollowUpSendAt } from "@/lib/follow-up";
 import { formatTargetTimeForDisplay } from "@/lib/target-time";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -104,7 +109,17 @@ export function DayPlanTimeline({
   );
   const { mutate: setItemCompleted, isPending: isToggling } = useMutation(
     trpc.dayPlan.setItemCompleted.mutationOptions({
-      onSuccess: () => router.refresh(),
+      onSuccess: ({ followUpSendAt, hasFollowUpFailed }, { itemId }) => {
+        router.refresh();
+        if (followUpSendAt !== null) {
+          showDayPlanFollowUpScheduledToast(itemId, followUpSendAt, () =>
+            router.refresh(),
+          );
+        }
+        if (hasFollowUpFailed) {
+          toast.error("Could not schedule the follow-up");
+        }
+      },
     }),
   );
   const [editingItem, setEditingItem] = useState<DayPlanItem | null>(null);
@@ -117,8 +132,10 @@ export function DayPlanTimeline({
         return;
       }
 
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       if (item.completed) {
-        setItemCompleted({ itemId: item.id, completed: false });
+        setItemCompleted({ itemId: item.id, completed: false, timeZone });
         return;
       }
 
@@ -127,7 +144,7 @@ export function DayPlanTimeline({
         return;
       }
 
-      setItemCompleted({ itemId: item.id, completed: true });
+      setItemCompleted({ itemId: item.id, completed: true, timeZone });
     },
     [setItemCompleted],
   );
@@ -295,7 +312,11 @@ export function DayPlanTimeline({
           }}
           onConfirm={() => {
             setItemCompleted(
-              { itemId: completeConfirmItem.id, completed: true },
+              {
+                itemId: completeConfirmItem.id,
+                completed: true,
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
               { onSuccess: () => setCompleteConfirmItem(null) },
             );
           }}
@@ -428,15 +449,34 @@ function DayPlanItemRow({
       onSuccess: () => router.refresh(),
     }),
   );
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const setItemFollowUp = useMutation(
+    trpc.dayPlan.setItemFollowUp.mutationOptions({
+      onSuccess: () => {
+        router.refresh();
+        setFollowUpOpen(false);
+      },
+    }),
+  );
+  const cancelFollowUp = useMutation(
+    trpc.dayPlan.cancelFollowUp.mutationOptions({
+      onSuccess: () => router.refresh(),
+    }),
+  );
   const isPending =
     deleteItem.isPending ||
     setItemCancelled.isPending ||
     duplicateItem.isPending ||
     copyToNextDay.isPending ||
-    cancelReminder.isPending;
+    cancelReminder.isPending ||
+    cancelFollowUp.isPending;
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
+  const hasPendingFollowUp =
+    item.followUp !== null && item.followUp.sendAt !== null;
+  const canEditFollowUp =
+    !item.isStepsLog && !item.completed && !hasPendingFollowUp;
   const hasPendingReminder = dayPlanItemHasPendingReminder(item);
   const canScheduleReminder = dayPlanItemCanScheduleReminder(item, planDate);
   const isUnlinkedFromTodo = !item.isStepsLog && item.todoId === null;
@@ -507,6 +547,33 @@ function DayPlanItemRow({
                   className="size-3.5 shrink-0 text-muted-foreground"
                   aria-label="Reminder scheduled"
                 />
+              ) : null}
+              {item.followUp !== null ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    className="inline-flex shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={
+                      hasPendingFollowUp
+                        ? "Follow-up scheduled"
+                        : "Follow-up planned"
+                    }
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Timer
+                      className={cn(
+                        "size-3.5",
+                        hasPendingFollowUp
+                          ? "text-primary"
+                          : "text-muted-foreground/60",
+                      )}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {item.followUp.sendAt !== null
+                      ? `Follow-up at ${formatFollowUpSendAt(item.followUp.sendAt)}: ${item.followUp.message}`
+                      : `Follow-up ${formatFollowUpDuration(item.followUp.minutes)} after completion: ${item.followUp.message}`}
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
             {item.targetTime !== null ||
@@ -583,6 +650,12 @@ function DayPlanItemRow({
               Remind me
             </ContextMenuItem>
           ) : null}
+          {canEditFollowUp ? (
+            <ContextMenuItem onClick={() => setFollowUpOpen(true)}>
+              <Timer />
+              Follow-up
+            </ContextMenuItem>
+          ) : null}
           {!item.isStepsLog ? (
             item.todoId !== null ? (
               <ContextMenuItem
@@ -647,7 +720,9 @@ function DayPlanItemRow({
             <CalendarRange />
             Copy on the n-th day
           </ContextMenuItem>
-          {hasPendingReminder || (!item.cancelled && !item.completed) ? (
+          {hasPendingReminder ||
+          hasPendingFollowUp ||
+          (!item.cancelled && !item.completed) ? (
             <>
               <ContextMenuSeparator />
               {hasPendingReminder ? (
@@ -659,6 +734,18 @@ function DayPlanItemRow({
                 >
                   <BellOff />
                   Cancel reminder
+                </ContextMenuItem>
+              ) : null}
+              {hasPendingFollowUp ? (
+                <ContextMenuItem
+                  variant="destructive"
+                  disabled={isPending}
+                  onClick={() => {
+                    cancelFollowUp.mutate({ itemId: item.id });
+                  }}
+                >
+                  <TimerOff />
+                  Cancel follow-up
                 </ContextMenuItem>
               ) : null}
               {!item.cancelled && !item.completed ? (
@@ -703,6 +790,24 @@ function DayPlanItemRow({
           item={item}
           open
           onOpenChange={setReferenceOpen}
+        />
+      ) : null}
+      {followUpOpen ? (
+        <FollowUpDialog
+          key={`${item.id}-follow-up`}
+          title={item.title}
+          followUp={item.followUp}
+          open
+          isPending={setItemFollowUp.isPending}
+          errorMessage={
+            setItemFollowUp.error !== null
+              ? "Could not save the follow-up. Please try again."
+              : null
+          }
+          onOpenChange={setFollowUpOpen}
+          onSave={(followUp) => {
+            setItemFollowUp.mutate({ itemId: item.id, followUp });
+          }}
         />
       ) : null}
     </>

@@ -6,6 +6,7 @@ import * as z from "zod";
 import { TodoCreateForm } from "@/components/todo-create-form";
 import { TodoList } from "@/components/todo-list";
 import db from "@/lib/db";
+import { followUpFromColumns } from "@/lib/follow-up";
 import { todo } from "@/lib/schema";
 
 async function TodoListSection({
@@ -13,14 +14,22 @@ async function TodoListSection({
 }: {
   highlightTodoId: string | undefined;
 }) {
-  const todos = await db
+  const todoRows = await db
     .select({
       id: todo.id,
       title: todo.title,
       targetTime: todo.targetTime,
+      followUpMinutes: todo.followUpMinutes,
+      followUpMessage: todo.followUpMessage,
     })
     .from(todo)
     .orderBy(asc(todo.createdAt));
+  const todos = todoRows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    targetTime: row.targetTime,
+    followUp: followUpFromColumns(row.followUpMinutes, row.followUpMessage),
+  }));
 
   if (todos.length === 0) {
     return (

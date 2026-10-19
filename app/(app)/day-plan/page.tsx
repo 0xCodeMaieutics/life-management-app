@@ -8,10 +8,12 @@ import { dayPlanItemReferenceFromColumns } from "@/lib/day-plan-item-reference";
 import { expirePastDayPlanReminders } from "@/lib/day-plan-reminders";
 import { type DayPlanItem } from "@/lib/day-segments";
 import db from "@/lib/db";
+import { followUpFromColumns } from "@/lib/follow-up";
 import { isValidPlanDateString } from "@/lib/plan-date";
 import {
   dayPlan,
   dayPlanItem,
+  dayPlanItemFollowUp,
   dayPlanItemReminder,
   dayPlanItemSteps,
   todo,
@@ -39,6 +41,24 @@ function mapPendingReminder(
     remindAt: remindAt.toISOString(),
     remindTime: parsedTime.data,
   };
+}
+
+function mapFollowUp(
+  followUpMinutes: number | null,
+  followUpMessage: string | null,
+  followUpSendAt: Date | null,
+): DayPlanItem["followUp"] {
+  const followUp = followUpFromColumns(followUpMinutes, followUpMessage);
+  if (followUp === null) {
+    return null;
+  }
+  if (followUpSendAt === null) {
+    return { ...followUp, sendAt: null };
+  }
+  if (followUpSendAt.getTime() <= Date.now()) {
+    return null;
+  }
+  return { ...followUp, sendAt: followUpSendAt.toISOString() };
 }
 
 async function DayPlanPageLoader({
@@ -77,12 +97,19 @@ async function DayPlanPageLoader({
             referenceValue: dayPlanItem.referenceValue,
             remindAt: dayPlanItemReminder.remindAt,
             remindTime: dayPlanItemReminder.remindTime,
+            followUpMinutes: dayPlanItem.followUpMinutes,
+            followUpMessage: dayPlanItem.followUpMessage,
+            followUpSendAt: dayPlanItemFollowUp.sendAt,
             stepsId: dayPlanItemSteps.id,
           })
           .from(dayPlanItem)
           .leftJoin(
             dayPlanItemReminder,
             eq(dayPlanItemReminder.dayPlanItemId, dayPlanItem.id),
+          )
+          .leftJoin(
+            dayPlanItemFollowUp,
+            eq(dayPlanItemFollowUp.dayPlanItemId, dayPlanItem.id),
           )
           .leftJoin(
             dayPlanItemSteps,
@@ -103,16 +130,29 @@ async function DayPlanPageLoader({
       row.referenceValue,
     ),
     pendingReminder: mapPendingReminder(row.remindAt, row.remindTime),
+    followUp: mapFollowUp(
+      row.followUpMinutes,
+      row.followUpMessage,
+      row.followUpSendAt,
+    ),
   }));
 
-  const todos = await db
+  const todoRows = await db
     .select({
       id: todo.id,
       title: todo.title,
       targetTime: todo.targetTime,
+      followUpMinutes: todo.followUpMinutes,
+      followUpMessage: todo.followUpMessage,
     })
     .from(todo)
     .orderBy(asc(todo.createdAt));
+  const todos = todoRows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    targetTime: row.targetTime,
+    followUp: followUpFromColumns(row.followUpMinutes, row.followUpMessage),
+  }));
 
   return (
     <DayPlanPageClient

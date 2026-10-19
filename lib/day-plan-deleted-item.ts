@@ -1,6 +1,7 @@
 import * as z from "zod";
 
 import { dayPlanItemReferenceSchema } from "@/lib/day-plan-item-reference";
+import { followUpSchema } from "@/lib/follow-up";
 import { isValidPlanDateString } from "@/lib/plan-date";
 import { dayPlanItemTargetTimeSchema } from "@/lib/target-time";
 
@@ -13,6 +14,7 @@ export const deletedDayPlanItemSchema = z.object({
   cancelled: z.boolean(),
   todoId: z.uuid().nullable(),
   reference: dayPlanItemReferenceSchema.nullable(),
+  followUp: followUpSchema.nullable(),
 });
 
 export type DeletedDayPlanItem = z.infer<typeof deletedDayPlanItemSchema>;
