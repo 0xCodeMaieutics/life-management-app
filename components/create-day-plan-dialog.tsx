@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Timer } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -134,7 +134,15 @@ export function CreateDayPlanDialog({
                   onChange={() => toggleTodo(item.id)}
                 />
                 <span className="flex flex-1 flex-col gap-0.5">
-                  <span className="text-sm font-medium">{item.title}</span>
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    {item.title}
+                    {item.followUp !== null ? (
+                      <Timer
+                        className="size-3.5 shrink-0 text-muted-foreground"
+                        aria-label="Has follow-up"
+                      />
+                    ) : null}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {formatTargetTimeForDisplay(item.targetTime)}
                   </span>
