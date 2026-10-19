@@ -1,7 +1,7 @@
 {
   "version": 1,
   "skills": {
-    "pr": {
+    "create-pr": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/pr/SKILL.md",
