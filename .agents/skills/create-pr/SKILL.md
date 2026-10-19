@@ -1,6 +1,9 @@
 ---
-name: pr
-description: "Use when writing a PR body."
+name: create-pr
+description: >-
+  Create a pull request with GitButler (`but` CLI): push, open the PR, and write
+  the body. Use when the user asks to open or create a PR. Do not use plain git
+  or `gh pr create`.
 metadata:
   credits:
     skill: show-me
@@ -8,6 +11,31 @@ metadata:
     organisation: Humanlayer
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
+
+# Create pull request (GitButler)
+
+Use the GitButler CLI (`but`) for every version-control step involved in opening a PR. Read and follow the **gitbutler** (`but`) skill for commits, branches, stacks, push, and conflict handling.
+
+## Non-negotiable
+
+- **Do not** use plain git for write operations (`git add`, `git commit`, `git push`, `git checkout`, `git merge`, `git rebase`, and similar).
+- **Do not** use `gh pr create` or other forge CLIs to open the PR. Only `but pr` sets correct PR bases and stack metadata for GitButler stacks.
+- Read-only git inspection (`git log`, `git show`, and similar) is fine when you need history context.
+
+## Workflow
+
+1. Ensure the branch has the commits you intend to ship (`but status`; use `but status -fv` when you need file or hunk detail).
+2. Draft the PR body using the template below (write to a file if you use `-F`).
+3. Create the PR in one step — `but pr new` pushes the branch and its ancestors; **do not** run `but push` first:
+
+```bash
+but pr new <branch-name> -F pr_message.txt
+# or: but pr new <branch-name> -m $'Title\n\nBody'
+# whole stack: but pr new <top-branch-name> -t
+```
+
+4. If forge auth is missing, run `but config forge auth`.
+5. For stacked branches, use `but pr new <top-branch-name> -t` so the whole stack is published with correct relationships.
 
 Use this template for writing the PR body:
 
