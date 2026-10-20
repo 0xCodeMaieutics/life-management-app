@@ -66,7 +66,7 @@ async function DayPlanPageLoader({
 }: {
   searchParams: PageProps<"/day-plan">["searchParams"];
 }) {
-  const { date: dateParam } = await searchParams;
+  const { date: dateParam, item: itemParam } = await searchParams;
   const planDate = typeof dateParam === "string" ? dateParam : undefined;
 
   if (planDate === undefined || !isValidPlanDateString(planDate)) {
@@ -138,6 +138,10 @@ async function DayPlanPageLoader({
       row.followUpSendAt,
     ),
   }));
+  const highlightItemId =
+    typeof itemParam === "string" && items.some((row) => row.id === itemParam)
+      ? itemParam
+      : undefined;
 
   const todoRows = await db
     .select({
@@ -160,6 +164,7 @@ async function DayPlanPageLoader({
     <DayPlanPageClient
       date={planDate}
       items={items}
+      highlightItemId={highlightItemId}
       todos={todos}
       hasDayPlan={plan !== undefined}
     />

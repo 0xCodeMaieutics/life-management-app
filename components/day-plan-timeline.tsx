@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useState } from "react";
 import { toast } from "sonner";
 
 import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-confirm-dialog";
@@ -82,9 +82,11 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export function DayPlanTimeline({
   items,
   planDate,
+  highlightItemId,
 }: {
   items: DayPlanItem[];
   planDate: string;
+  highlightItemId?: string;
 }) {
   const itemsByDaySegment = mapDayPlanItemsByDaySegment(items);
   const visibleSegments = DAY_SEGMENT_DISPLAY_ORDER.flatMap((segment) => {
@@ -100,7 +102,13 @@ export function DayPlanTimeline({
 
   const trpc = useTRPC();
   const router = useRouter();
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(() => {
+    if (highlightItemId === undefined) {
+      return null;
+    }
+    const index = orderedItems.findIndex((item) => item.id === highlightItemId);
+    return index === -1 ? null : index;
+  });
   const { mutate: deleteItem, isPending: isDeleting } = useMutation(
     trpc.dayPlan.deleteItem.mutationOptions({
       onSuccess: ({ deleted }) => {
@@ -155,6 +163,23 @@ export function DayPlanTimeline({
     (index: number) => Math.max(0, Math.min(index, orderedItems.length - 1)),
     [orderedItems.length],
   );
+
+  const selectHighlightedItem = useEffectEvent((id: string) => {
+    const index = orderedItems.findIndex((item) => item.id === id);
+    if (index !== -1) {
+      setSelectedIndex(index);
+    }
+  });
+
+  useEffect(() => {
+    if (highlightItemId === undefined) {
+      return;
+    }
+    selectHighlightedItem(highlightItemId);
+    document
+      .getElementById(`day-plan-item-${highlightItemId}`)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [highlightItemId]);
 
   useEffect(() => {
     if (selectedIndex === null) {
@@ -502,6 +527,7 @@ function DayPlanItemRow({
     <>
       <ContextMenu disabled={item.isStepsLog}>
         <ContextMenuTrigger
+          id={`day-plan-item-${item.id}`}
           className={cn(
             "-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-1.5 rounded-md border border-transparent px-2 py-1 transition-colors",
             selected && "border-primary/50 bg-muted/30",

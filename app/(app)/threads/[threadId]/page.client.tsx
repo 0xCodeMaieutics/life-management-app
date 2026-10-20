@@ -221,7 +221,7 @@ export default function ThreadDetailPageClient({
             {linkedItems.map((item) => (
               <li key={item.id}>
                 <Link
-                  href={`/day-plan?date=${item.planDate}`}
+                  href={`/day-plan?date=${item.planDate}&item=${item.id}`}
                   className="flex items-baseline gap-x-2 text-sm hover:underline"
                 >
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
