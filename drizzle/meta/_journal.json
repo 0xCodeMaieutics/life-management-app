@@ -22,6 +22,13 @@
       "when": 1792418788025,
       "tag": "0002_day_plan_item_follow_up",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792485560354,
+      "tag": "0003_thread",
+      "breakpoints": true
     }
   ]
 }

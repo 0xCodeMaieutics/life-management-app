@@ -29,6 +29,7 @@ import {
   dayPlanItem,
   dayPlanItemFollowUp,
   dayPlanItemSteps,
+  thread,
   todo,
 } from "@/lib/schema";
 import {
@@ -432,6 +433,7 @@ export const dayPlanRouter = createTRPCRouter({
           .select({
             dayPlanId: dayPlanItem.dayPlanId,
             todoId: dayPlanItem.todoId,
+            threadId: dayPlanItem.threadId,
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             referenceType: dayPlanItem.referenceType,
@@ -450,6 +452,7 @@ export const dayPlanRouter = createTRPCRouter({
         await tx.insert(dayPlanItem).values({
           dayPlanId: item.dayPlanId,
           todoId: item.todoId,
+          threadId: item.threadId,
           title: item.title,
           targetTime: item.targetTime,
           completed: false,
@@ -470,6 +473,7 @@ export const dayPlanRouter = createTRPCRouter({
         const [item] = await tx
           .select({
             todoId: dayPlanItem.todoId,
+            threadId: dayPlanItem.threadId,
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             referenceType: dayPlanItem.referenceType,
@@ -514,6 +518,7 @@ export const dayPlanRouter = createTRPCRouter({
           .values({
             dayPlanId,
             todoId: item.todoId,
+            threadId: item.threadId,
             title: item.title,
             targetTime: item.targetTime,
             completed: false,
@@ -544,6 +549,7 @@ export const dayPlanRouter = createTRPCRouter({
             dayPlanId: dayPlanItem.dayPlanId,
             planDate: dayPlan.date,
             todoId: dayPlanItem.todoId,
+            threadId: dayPlanItem.threadId,
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
@@ -570,6 +576,7 @@ export const dayPlanRouter = createTRPCRouter({
           completed: item.completed,
           cancelled: item.cancelled,
           todoId: item.todoId,
+          threadId: item.threadId,
           reference: dayPlanItemReferenceFromColumns(
             item.referenceType,
             item.referenceValue,
@@ -631,10 +638,20 @@ export const dayPlanRouter = createTRPCRouter({
           dayPlanId = createdPlan.id;
         }
 
+        const [linkedThread] =
+          snapshot.threadId === null
+            ? []
+            : await tx
+                .select({ id: thread.id })
+                .from(thread)
+                .where(eq(thread.id, snapshot.threadId))
+                .limit(1);
+
         await tx.insert(dayPlanItem).values({
           id: snapshot.id,
           dayPlanId,
           todoId: snapshot.todoId,
+          threadId: linkedThread?.id ?? null,
           title: snapshot.title,
           targetTime: snapshot.targetTime,
           completed: snapshot.completed,

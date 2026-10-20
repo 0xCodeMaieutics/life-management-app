@@ -13,6 +13,7 @@ export const deletedDayPlanItemSchema = z.object({
   completed: z.boolean(),
   cancelled: z.boolean(),
   todoId: z.uuid().nullable(),
+  threadId: z.uuid().nullable(),
   reference: dayPlanItemReferenceSchema.nullable(),
   followUp: followUpSchema.nullable(),
 });

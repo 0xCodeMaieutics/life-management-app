@@ -89,6 +89,7 @@ async function DayPlanPageLoader({
           .select({
             id: dayPlanItem.id,
             todoId: dayPlanItem.todoId,
+            threadId: dayPlanItem.threadId,
             title: dayPlanItem.title,
             targetTime: dayPlanItem.targetTime,
             completed: dayPlanItem.completed,
@@ -120,6 +121,7 @@ async function DayPlanPageLoader({
   const items = itemRows.map((row) => ({
     id: row.id,
     todoId: row.todoId,
+    threadId: row.threadId,
     title: row.title,
     targetTime: row.targetTime,
     completed: row.completed,

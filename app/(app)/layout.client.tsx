@@ -6,6 +6,7 @@ import {
   FileUp,
   FolderOpen,
   CalendarDays,
+  MessagesSquare,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -46,6 +47,12 @@ const NAV_ITEMS = [
     href: "/later-reads",
     icon: BookMarked,
     isActive: (pathname: string) => pathname.startsWith("/later-reads"),
+  },
+  {
+    title: "Threads",
+    href: "/threads",
+    icon: MessagesSquare,
+    isActive: (pathname: string) => pathname.startsWith("/threads"),
   },
   {
     title: "Matters",

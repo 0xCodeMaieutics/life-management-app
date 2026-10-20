@@ -14,6 +14,7 @@ import {
   Footprints,
   Link2,
   Link2Off,
+  MessagesSquare,
   Pencil,
   RotateCcw,
   Square,
@@ -21,6 +22,7 @@ import {
   TimerOff,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -463,13 +465,28 @@ function DayPlanItemRow({
       onSuccess: () => router.refresh(),
     }),
   );
+  const convertToThread = useMutation(
+    trpc.thread.convertDayPlanItem.mutationOptions({
+      onSuccess: ({ threadId }) => {
+        router.refresh();
+        toast.success("Converted to thread", {
+          action: {
+            label: "Open",
+            onClick: () => router.push(`/threads/${threadId}`),
+          },
+        });
+      },
+      onError: () => toast.error("Could not convert to thread"),
+    }),
+  );
   const isPending =
     deleteItem.isPending ||
     setItemCancelled.isPending ||
     duplicateItem.isPending ||
     copyToNextDay.isPending ||
     cancelReminder.isPending ||
-    cancelFollowUp.isPending;
+    cancelFollowUp.isPending ||
+    convertToThread.isPending;
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
@@ -575,6 +592,19 @@ function DayPlanItemRow({
                   </TooltipContent>
                 </Tooltip>
               ) : null}
+              {item.threadId !== null ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={<Link href={`/threads/${item.threadId}`} />}
+                    className="inline-flex shrink-0 rounded-sm text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Go to thread"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <MessagesSquare className="size-3.5" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Go to thread</TooltipContent>
+                </Tooltip>
+              ) : null}
             </div>
             {item.targetTime !== null ||
             item.reference !== null ||
@@ -675,6 +705,28 @@ function DayPlanItemRow({
                     Not linked to the todo library.
                   </span>
                 </span>
+              </ContextMenuItem>
+            )
+          ) : null}
+          {!item.isStepsLog ? (
+            item.threadId !== null ? (
+              <ContextMenuItem
+                onClick={() => {
+                  router.push(`/threads/${item.threadId}`);
+                }}
+              >
+                <MessagesSquare />
+                Go to thread
+              </ContextMenuItem>
+            ) : (
+              <ContextMenuItem
+                disabled={isPending}
+                onClick={() => {
+                  convertToThread.mutate({ itemId: item.id });
+                }}
+              >
+                <MessagesSquare />
+                Convert to thread
               </ContextMenuItem>
             )
           ) : null}

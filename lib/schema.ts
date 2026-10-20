@@ -59,6 +59,29 @@ export const todo = sqliteTable("todo", {
     .$defaultFn(() => new Date()),
 });
 
+export const THREAD_STATUSES = ["PENDING", "COMPLETED"] as const;
+
+export const thread = sqliteTable("thread", {
+  id: id(),
+  title: text().notNull(),
+  status: text({ enum: THREAD_STATUSES }).notNull().default("PENDING"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const threadNote = sqliteTable("thread_note", {
+  id: id(),
+  threadId: text("thread_id")
+    .notNull()
+    .references(() => thread.id, { onDelete: "cascade" }),
+  content: text().notNull(),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export const dayPlan = sqliteTable("day_plan", {
   id: id(),
   date: text().notNull().unique(),
@@ -70,6 +93,9 @@ export const dayPlanItem = sqliteTable("day_plan_item", {
     .notNull()
     .references(() => dayPlan.id, { onDelete: "cascade" }),
   todoId: text("todo_id").references(() => todo.id, { onDelete: "set null" }),
+  threadId: text("thread_id").references(() => thread.id, {
+    onDelete: "set null",
+  }),
   title: text().notNull(),
   targetTime: text("target_time").$type<DayPlanItemTargetTime>(),
   completed: integer({ mode: "boolean" }).notNull().default(false),
