@@ -44,6 +44,8 @@ async function ThreadDetail({
     .select({
       id: dayPlanItem.id,
       title: dayPlanItem.title,
+      completed: dayPlanItem.completed,
+      cancelled: dayPlanItem.cancelled,
       planDate: dayPlan.date,
     })
     .from(dayPlanItem)
