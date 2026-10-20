@@ -39,7 +39,7 @@ export default function ImportPage() {
   });
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-y-4 p-6">
+    <div className="flex flex-1 flex-col items-center justify-center gap-y-4 p-4 md:p-6">
       <h1 className="text-lg font-semibold">Pick a matter</h1>
       {currentFile === null ? (
         <FileUpload
@@ -59,10 +59,12 @@ export default function ImportPage() {
         />
       ) : (
         <div className="flex w-full max-w-md flex-col gap-y-2">
-          <div className="relative flex items-center gap-x-2 rounded-md border p-2">
-            <FileIcon />
-            <div className="flex flex-col gap-y-0.5">
-              <span className="font-semibold">{currentFile.name}</span>
+          <div className="relative flex items-center gap-x-2 rounded-md border p-2 pr-10">
+            <FileIcon className="shrink-0" />
+            <div className="flex min-w-0 flex-col gap-y-0.5">
+              <span className="font-semibold break-all">
+                {currentFile.name}
+              </span>
               <span className="text-xs text-muted-foreground">
                 {currentFile.size} bytes
               </span>

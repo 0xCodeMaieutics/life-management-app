@@ -539,7 +539,7 @@ function DayPlanItemRow({
           )}
           onClick={onSelect}
         >
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <div className="flex min-w-0 flex-1 items-center gap-1.5">
               {item.isStepsLog ? (
                 <Footprints
@@ -579,7 +579,7 @@ function DayPlanItemRow({
               )}
               <p
                 className={cn(
-                  "text-sm leading-tight font-medium",
+                  "min-w-0 text-sm leading-tight font-medium wrap-break-word",
                   item.completed &&
                     !item.isStepsLog &&
                     "text-muted-foreground line-through",
@@ -676,6 +676,7 @@ function DayPlanItemRow({
               type="button"
               variant="ghost"
               size="icon-xs"
+              className="size-8 md:size-6"
               aria-label={`Change date and time of ${item.title}`}
               disabled={isPending}
               onClick={(event) => {
@@ -689,6 +690,7 @@ function DayPlanItemRow({
               type="button"
               variant="ghost"
               size="icon-xs"
+              className="size-8 md:size-6"
               aria-label={`Delete ${item.title}`}
               disabled={isPending}
               onClick={(event) => {

@@ -72,7 +72,7 @@ async function TodosPageLoader({
 
 export default function TodosPage(props: PageProps<"/todos">) {
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6">
+    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <TodosPageLoader searchParams={props.searchParams} />
       </Suspense>

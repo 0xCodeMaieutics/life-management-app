@@ -35,7 +35,9 @@ async function MatterList() {
               </span>
               <MatterAttachment fileKey={key} />
             </div>
-            <span className="text-xs text-muted-foreground">{category}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {category}
+            </span>
           </Link>
         </li>
       ))}
@@ -45,7 +47,7 @@ async function MatterList() {
 
 export default function MatterPage() {
   return (
-    <div className="flex flex-1 flex-col gap-y-4 p-6">
+    <div className="flex flex-1 flex-col gap-y-4 p-4 md:p-6">
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <MatterList />
       </Suspense>
