@@ -133,6 +133,7 @@ export type DayPlanItem = {
   cancelled: boolean;
   isStepsLog: boolean;
   todoId: string | null;
+  threadId: string | null;
   reference: DayPlanItemReference | null;
   pendingReminder: DayPlanItemPendingReminder | null;
   followUp: DayPlanItemFollowUp | null;
