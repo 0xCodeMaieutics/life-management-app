@@ -37,11 +37,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export default function DayPlanPageClient({
   date,
   items,
+  highlightItemId,
   todos,
   hasDayPlan,
 }: {
   date: string;
   items: DayPlanItem[];
+  highlightItemId?: string;
   todos: TodoRowData[];
   hasDayPlan: boolean;
 }) {
@@ -136,7 +138,11 @@ export default function DayPlanPageClient({
           </div>
         </div>
         {hasDayPlan ? (
-          <DayPlanTimeline items={items} planDate={date} />
+          <DayPlanTimeline
+            items={items}
+            planDate={date}
+            highlightItemId={highlightItemId}
+          />
         ) : (
           <CreateDayPlanTrigger planDate={date} todos={todos} />
         )}
