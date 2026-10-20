@@ -66,7 +66,7 @@ export function ReadRow({ read }: { read: ReadRowData }) {
       <ContextMenu>
         <ContextMenuTrigger
           className={cn(
-            "flex w-full flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors",
+            "flex w-full min-w-0 flex-col gap-1 rounded-lg border px-4 py-3 text-left transition-colors",
           )}
         >
           <div className="flex items-center gap-1.5">
@@ -86,7 +86,7 @@ export function ReadRow({ read }: { read: ReadRowData }) {
             href={read.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="text-sm font-medium break-all text-primary underline-offset-4 hover:underline"
             onClick={(event) => event.stopPropagation()}
           >
             {read.url}
