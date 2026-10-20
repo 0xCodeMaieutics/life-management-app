@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import * as z from "zod";
 
 import { dayPlanItemReferenceFromColumns } from "@/lib/day-plan-item-reference";
@@ -75,6 +75,59 @@ export const threadRouter = createTRPCRouter({
           .where(eq(dayPlanItem.id, input.itemId));
 
         return { threadId: createdThread.id };
+      });
+    }),
+
+  listPending: baseProcedure.query(async () => {
+    return db
+      .select({ id: thread.id, title: thread.title })
+      .from(thread)
+      .where(eq(thread.status, "PENDING"))
+      .orderBy(desc(thread.createdAt));
+  }),
+
+  linkDayPlanItem: baseProcedure
+    .input(threadIdInputSchema.extend({ itemId: z.uuid() }))
+    .mutation(async ({ input }) => {
+      return db.transaction(async (tx) => {
+        const [item] = await tx
+          .select({
+            threadId: dayPlanItem.threadId,
+            stepsId: dayPlanItemSteps.id,
+          })
+          .from(dayPlanItem)
+          .leftJoin(
+            dayPlanItemSteps,
+            eq(dayPlanItemSteps.dayPlanItemId, dayPlanItem.id),
+          )
+          .where(eq(dayPlanItem.id, input.itemId))
+          .limit(1);
+
+        if (item === undefined) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+        if (item.stepsId !== null) {
+          throw new TRPCError({ code: "BAD_REQUEST" });
+        }
+        if (item.threadId !== null) {
+          throw new TRPCError({ code: "CONFLICT" });
+        }
+
+        const [found] = await tx
+          .select({ id: thread.id })
+          .from(thread)
+          .where(eq(thread.id, input.threadId))
+          .limit(1);
+        if (found === undefined) {
+          throw new TRPCError({ code: "NOT_FOUND" });
+        }
+
+        await tx
+          .update(dayPlanItem)
+          .set({ threadId: input.threadId })
+          .where(eq(dayPlanItem.id, input.itemId));
+
+        return { threadId: input.threadId };
       });
     }),
 

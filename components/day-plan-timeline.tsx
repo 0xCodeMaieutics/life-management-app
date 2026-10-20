@@ -31,6 +31,7 @@ import { DayPlanCompleteConfirmDialog } from "@/components/day-plan-complete-con
 import { showDayPlanItemDeletedToast } from "@/components/day-plan-deleted-toast";
 import { showDayPlanFollowUpScheduledToast } from "@/components/day-plan-follow-up-toast";
 import { DayPlanItemCopyNthDayDialog } from "@/components/day-plan-item-copy-nth-day-dialog";
+import { DayPlanItemLinkThreadDialog } from "@/components/day-plan-item-link-thread-dialog";
 import { DayPlanItemReferenceDialog } from "@/components/day-plan-item-reference-dialog";
 import { DayPlanItemReferenceLink } from "@/components/day-plan-item-reference-link";
 import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
@@ -490,6 +491,7 @@ function DayPlanItemRow({
   const [remindOpen, setRemindOpen] = useState(false);
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
+  const [linkThreadOpen, setLinkThreadOpen] = useState(false);
   const hasPendingFollowUp =
     item.followUp !== null && item.followUp.sendAt !== null;
   const canEditFollowUp =
@@ -730,6 +732,15 @@ function DayPlanItemRow({
               </ContextMenuItem>
             )
           ) : null}
+          {!item.isStepsLog && item.threadId === null ? (
+            <ContextMenuItem
+              disabled={isPending}
+              onClick={() => setLinkThreadOpen(true)}
+            >
+              <Link2 />
+              Link to thread
+            </ContextMenuItem>
+          ) : null}
           {!item.isStepsLog ? (
             <ContextMenuItem onClick={() => setReferenceOpen(true)}>
               <Link2 />
@@ -842,6 +853,14 @@ function DayPlanItemRow({
           item={item}
           open
           onOpenChange={setReferenceOpen}
+        />
+      ) : null}
+      {linkThreadOpen ? (
+        <DayPlanItemLinkThreadDialog
+          key={`${item.id}-link-thread`}
+          item={item}
+          open
+          onOpenChange={setLinkThreadOpen}
         />
       ) : null}
       {followUpOpen ? (
