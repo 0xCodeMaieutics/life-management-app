@@ -21,6 +21,7 @@ import {
   Timer,
   TimerOff,
   Trash2,
+  Type,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ import { DayPlanItemLinkThreadDialog } from "@/components/day-plan-item-link-thr
 import { DayPlanItemReferenceDialog } from "@/components/day-plan-item-reference-dialog";
 import { DayPlanItemReferenceLink } from "@/components/day-plan-item-reference-link";
 import { DayPlanItemRemindDialog } from "@/components/day-plan-item-remind-dialog";
+import { DayPlanItemRenameDialog } from "@/components/day-plan-item-rename-dialog";
 import { DayPlanItemScheduleDialog } from "@/components/day-plan-item-schedule-dialog";
 import { FollowUpDialog } from "@/components/follow-up-dialog";
 import { Button } from "@/components/ui/button";
@@ -517,6 +519,7 @@ function DayPlanItemRow({
   const [copyNthDayOpen, setCopyNthDayOpen] = useState(false);
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [linkThreadOpen, setLinkThreadOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
   const hasPendingFollowUp =
     item.followUp !== null && item.followUp.sendAt !== null;
   const canEditFollowUp =
@@ -702,6 +705,15 @@ function DayPlanItemRow({
             <Pencil />
             Change item
           </ContextMenuItem>
+          {!item.isStepsLog ? (
+            <ContextMenuItem
+              disabled={isPending}
+              onClick={() => setRenameOpen(true)}
+            >
+              <Type />
+              Rename
+            </ContextMenuItem>
+          ) : null}
           {canScheduleReminder ? (
             <ContextMenuItem onClick={() => setRemindOpen(true)}>
               <Bell />
@@ -871,6 +883,14 @@ function DayPlanItemRow({
           item={item}
           open
           onOpenChange={setCopyNthDayOpen}
+        />
+      ) : null}
+      {renameOpen ? (
+        <DayPlanItemRenameDialog
+          key={`${item.id}-rename`}
+          item={item}
+          open
+          onOpenChange={setRenameOpen}
         />
       ) : null}
       {referenceOpen ? (

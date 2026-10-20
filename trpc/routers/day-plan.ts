@@ -425,6 +425,43 @@ export const dayPlanRouter = createTRPCRouter({
       );
     }),
 
+  updateItemTitle: baseProcedure
+    .input(
+      itemIdInputSchema.extend({
+        title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const [stepsLog] = await db
+        .select({ id: dayPlanItemSteps.id })
+        .from(dayPlanItemSteps)
+        .where(eq(dayPlanItemSteps.dayPlanItemId, input.itemId))
+        .limit(1);
+      if (stepsLog !== undefined) {
+        throw new TRPCError({ code: "BAD_REQUEST" });
+      }
+
+      const [item] = await db
+        .select({ planDate: dayPlan.date })
+        .from(dayPlanItem)
+        .innerJoin(dayPlan, eq(dayPlanItem.dayPlanId, dayPlan.id))
+        .where(eq(dayPlanItem.id, input.itemId))
+        .limit(1);
+      if (item === undefined) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await db
+        .update(dayPlanItem)
+        .set({ title: input.title })
+        .where(eq(dayPlanItem.id, input.itemId));
+
+      await rescheduleDayPlanItemReminderForPlanDate(
+        input.itemId,
+        item.planDate,
+      );
+    }),
+
   duplicateItem: baseProcedure
     .input(itemIdInputSchema)
     .mutation(async ({ input }) => {
