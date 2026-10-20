@@ -2,7 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckSquare, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { CheckSquare, Pencil, RotateCcw, Square, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, Fragment, type KeyboardEvent, useState } from "react";
@@ -55,7 +55,13 @@ export default function ThreadDetailPageClient({
     status: (typeof THREAD_STATUSES)[number];
   };
   notes: ThreadNote[];
-  linkedItems: { id: string; title: string; planDate: string }[];
+  linkedItems: {
+    id: string;
+    title: string;
+    completed: boolean;
+    cancelled: boolean;
+    planDate: string;
+  }[];
 }) {
   const trpc = useTRPC();
   const router = useRouter();
@@ -222,12 +228,36 @@ export default function ThreadDetailPageClient({
               <li key={item.id}>
                 <Link
                   href={`/day-plan?date=${item.planDate}&item=${item.id}`}
-                  className="flex items-baseline gap-x-2 text-sm hover:underline"
+                  className="flex items-center gap-x-2 text-sm hover:underline"
                 >
+                  {item.completed ? (
+                    <CheckSquare
+                      className="size-4 shrink-0 stroke-primary text-primary"
+                      aria-label="Completed"
+                    />
+                  ) : (
+                    <Square
+                      className={cn(
+                        "size-4 shrink-0",
+                        item.cancelled
+                          ? "stroke-destructive/70 text-destructive/70"
+                          : "stroke-muted-foreground",
+                      )}
+                      aria-label={item.cancelled ? "Cancelled" : "Open"}
+                    />
+                  )}
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                     {formatPlanDateForDisplay(item.planDate)}
                   </span>
-                  <span className="min-w-0 truncate">{item.title}</span>
+                  <span
+                    className={cn(
+                      "min-w-0 truncate",
+                      item.completed && "text-muted-foreground line-through",
+                      item.cancelled && "text-destructive/80 line-through",
+                    )}
+                  >
+                    {item.title}
+                  </span>
                 </Link>
               </li>
             ))}
