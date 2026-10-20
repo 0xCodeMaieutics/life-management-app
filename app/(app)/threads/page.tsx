@@ -1,21 +1,28 @@
 import { format } from "date-fns";
 import { count, desc, eq } from "drizzle-orm";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { SettledSection } from "@/components/settled-section";
 import db from "@/lib/db";
-import { thread } from "@/lib/schema";
+import { thread, threadNote } from "@/lib/schema";
 
 async function PendingThreadsSection() {
   await connection();
 
   const threads = await db
-    .select({ id: thread.id, title: thread.title, createdAt: thread.createdAt })
+    .select({
+      id: thread.id,
+      title: thread.title,
+      createdAt: thread.createdAt,
+      noteCount: count(threadNote.id),
+    })
     .from(thread)
+    .leftJoin(threadNote, eq(threadNote.threadId, thread.id))
     .where(eq(thread.status, "PENDING"))
+    .groupBy(thread.id)
     .orderBy(desc(thread.createdAt));
 
   if (threads.length === 0) {
@@ -35,7 +42,19 @@ async function PendingThreadsSection() {
             href={`/threads/${row.id}`}
             className="flex w-full items-baseline gap-3 rounded-lg border px-4 py-3 text-sm leading-tight font-medium transition-colors hover:bg-muted/30"
           >
-            <span className="min-w-0 flex-1">{row.title}</span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span>{row.title}</span>
+              <span
+                className="text-xs font-normal text-muted-foreground"
+                aria-label={`${row.noteCount} ${row.noteCount === 1 ? "note" : "notes"}`}
+              >
+                {row.noteCount}
+                <MessageSquare
+                  className="ml-1 inline-block size-3 align-[-0.1em]"
+                  aria-hidden="true"
+                />
+              </span>
+            </span>
             <time
               dateTime={row.createdAt.toISOString()}
               className="shrink-0 text-xs font-normal text-muted-foreground"
