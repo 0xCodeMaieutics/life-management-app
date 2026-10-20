@@ -119,7 +119,7 @@ export default function ThreadDetailPageClient({
 
   return (
     <article className="flex flex-col gap-y-6">
-      <header className="flex items-start justify-between gap-x-2">
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         {isEditingTitle ? (
           <form
             onSubmit={handleTitleSubmit}

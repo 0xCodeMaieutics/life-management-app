@@ -119,7 +119,7 @@ async function ReadFinishedSection() {
 
 export default function LaterReadsPage() {
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6">
+    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <ReadCreateForm />
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <ReadListSection />

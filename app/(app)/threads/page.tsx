@@ -92,7 +92,7 @@ async function CompletedThreadsSection() {
 
 export default function ThreadsPage() {
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6">
+    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <Suspense fallback={<p className="text-sm">Loading…</p>}>
         <PendingThreadsSection />
       </Suspense>

@@ -34,10 +34,14 @@ async function MatterDetail({
     <article className="flex flex-col gap-y-4">
       <header className="flex items-start justify-between gap-x-2">
         <MatterTitleForm matterId={matterId} title={title} />
-        <span className="text-xs text-muted-foreground">{category}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {category}
+        </span>
       </header>
       <MatterAttachment fileKey={key} />
-      <pre className="text-sm whitespace-pre-wrap">{documentContent}</pre>
+      <pre className="text-sm wrap-break-word whitespace-pre-wrap">
+        {documentContent}
+      </pre>
     </article>
   );
 }
@@ -46,7 +50,7 @@ export default function MatterDetailPage(
   props: PageProps<"/matter/[matterId]">,
 ) {
   return (
-    <div className="flex flex-1 flex-col gap-y-4 p-6">
+    <div className="flex flex-1 flex-col gap-y-4 p-4 md:p-6">
       <Link
         href="/matter"
         className="text-sm text-muted-foreground hover:underline"

@@ -85,7 +85,7 @@ export default function DayPlanPageClient({
   }, [date, router]);
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6">
+    <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <div className="flex items-center">
         <Button
           type="button"
@@ -125,9 +125,9 @@ export default function DayPlanPageClient({
       </div>
 
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Day plan</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {hasDayPlan ? (
               <>
                 <AddTodosToDayPlanTrigger planDate={date} todos={todos} />

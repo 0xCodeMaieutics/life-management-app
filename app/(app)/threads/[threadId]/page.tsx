@@ -70,7 +70,7 @@ export default function ThreadDetailPage(
   props: PageProps<"/threads/[threadId]">,
 ) {
   return (
-    <div className="flex flex-1 flex-col gap-y-4 p-6">
+    <div className="flex flex-1 flex-col gap-y-4 p-4 md:p-6">
       <Link
         href="/threads"
         className="text-sm text-muted-foreground hover:underline"
