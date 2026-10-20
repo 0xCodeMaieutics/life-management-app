@@ -26,6 +26,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -70,6 +71,7 @@ const NAV_ITEMS = [
 
 function SidebarNav() {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
 
   return (
     <SidebarGroup>
@@ -81,6 +83,7 @@ function SidebarNav() {
                 isActive={item.isActive(pathname)}
                 tooltip={item.title}
                 render={<Link href={item.href} />}
+                onClick={() => setOpenMobile(false)}
               >
                 <item.icon />
                 <span>{item.title}</span>
@@ -116,6 +119,8 @@ function SidebarNavFallback() {
 }
 
 function AppSidebar() {
+  const { setOpenMobile } = useSidebar();
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader>
@@ -124,6 +129,7 @@ function AppSidebar() {
             <SidebarMenuButton
               size="lg"
               render={<Link href="/day-plan" />}
+              onClick={() => setOpenMobile(false)}
               className="hover:bg-transparent active:bg-transparent"
             >
               <Image
@@ -167,7 +173,6 @@ export default function AppLayoutClient({
         style={
           {
             "--sidebar-width": "20rem",
-            "--sidebar-width-mobile": "20rem",
           } as React.CSSProperties
         }
       >
