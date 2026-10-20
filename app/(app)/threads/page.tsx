@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { count, desc, eq } from "drizzle-orm";
 import { CheckSquare } from "lucide-react";
 import Link from "next/link";
@@ -12,7 +13,7 @@ async function PendingThreadsSection() {
   await connection();
 
   const threads = await db
-    .select({ id: thread.id, title: thread.title })
+    .select({ id: thread.id, title: thread.title, createdAt: thread.createdAt })
     .from(thread)
     .where(eq(thread.status, "PENDING"))
     .orderBy(desc(thread.createdAt));
@@ -32,9 +33,15 @@ async function PendingThreadsSection() {
         <li key={row.id}>
           <Link
             href={`/threads/${row.id}`}
-            className="flex w-full rounded-lg border px-4 py-3 text-sm leading-tight font-medium transition-colors hover:bg-muted/30"
+            className="flex w-full items-baseline gap-3 rounded-lg border px-4 py-3 text-sm leading-tight font-medium transition-colors hover:bg-muted/30"
           >
-            {row.title}
+            <span className="min-w-0 flex-1">{row.title}</span>
+            <time
+              dateTime={row.createdAt.toISOString()}
+              className="shrink-0 text-xs font-normal text-muted-foreground"
+            >
+              {format(row.createdAt, "d MMM yyyy")}
+            </time>
           </Link>
         </li>
       ))}
