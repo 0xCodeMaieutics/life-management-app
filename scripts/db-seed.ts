@@ -13,6 +13,8 @@ import {
   matter,
   read,
   readReminder,
+  thread,
+  threadNote,
   todo,
 } from "@/lib/schema";
 
@@ -21,6 +23,8 @@ const tables = [
   read,
   readReminder,
   todo,
+  thread,
+  threadNote,
   dayPlan,
   dayPlanItem,
   dayPlanItemReminder,
@@ -109,6 +113,60 @@ async function main() {
         readBeforeBed,
       ] = todos;
 
+      const [landlordThread, passportThread, bikeThread] = await tx
+        .insert(thread)
+        .values([
+          {
+            title: "Reply to landlord",
+            createdAt: new Date(now - 1 * DAY_IN_MS),
+          },
+          {
+            title: "Renew passport",
+            createdAt: new Date(now - 6 * DAY_IN_MS),
+          },
+          {
+            title: "Fix bike brakes",
+            status: "COMPLETED",
+            createdAt: new Date(now - 12 * DAY_IN_MS),
+            completedAt: new Date(now - 2 * DAY_IN_MS),
+          },
+        ])
+        .returning();
+
+      await tx.insert(threadNote).values([
+        {
+          threadId: landlordThread.id,
+          content: "Email: landlord@example.com",
+          createdAt: new Date(now - 1 * DAY_IN_MS),
+        },
+        {
+          threadId: landlordThread.id,
+          content:
+            "Heating still broken. Sent photos and asked for a repair date.",
+          createdAt: new Date(now - 1 * DAY_IN_MS + 60 * 60 * 1000),
+        },
+        {
+          threadId: passportThread.id,
+          content: "Booking page: https://example.com/passport-appointments",
+          createdAt: new Date(now - 6 * DAY_IN_MS),
+        },
+        {
+          threadId: passportThread.id,
+          content: "Need new photos first.\nPhoto shop: +1 555 0142",
+          createdAt: new Date(now - 4 * DAY_IN_MS),
+        },
+        {
+          threadId: bikeThread.id,
+          content: "Ordered new brake pads.",
+          createdAt: new Date(now - 12 * DAY_IN_MS),
+        },
+        {
+          threadId: bikeThread.id,
+          content: "Pads fitted, brakes work again.",
+          createdAt: new Date(now - 2 * DAY_IN_MS),
+        },
+      ]);
+
       const [yesterdayPlan, todayPlan, tomorrowPlan] = await tx
         .insert(dayPlan)
         .values([{ date: yesterday }, { date: today }, { date: tomorrow }])
@@ -145,6 +203,12 @@ async function main() {
             title: readBeforeBed.title,
             targetTime: readBeforeBed.targetTime,
           },
+          {
+            dayPlanId: yesterdayPlan.id,
+            threadId: bikeThread.id,
+            title: "Fix bike brakes",
+            completed: true,
+          },
         ])
         .returning();
 
@@ -180,6 +244,7 @@ async function main() {
           },
           {
             dayPlanId: todayPlan.id,
+            threadId: landlordThread.id,
             title: "Reply to landlord",
             targetTime: "16:00",
             referenceType: "EMAIL",
