@@ -251,6 +251,11 @@ async function main() {
           createdAt: new Date(now - 4 * DAY_IN_MS),
         },
         {
+          url: "https://www.example.com/articles/2026/10/an-extremely-long-article-slug-that-keeps-going-to-test-how-read-rows-handle-overflowing-urls?utm_source=newsletter&utm_medium=email&utm_campaign=autumn-reading-list&ref=seed",
+          title: "Very long link",
+          createdAt: new Date(now - 5 * DAY_IN_MS),
+        },
+        {
           url: "https://effect.website/docs",
           title: "Effect docs",
           createdAt: new Date(now - 7 * DAY_IN_MS),
