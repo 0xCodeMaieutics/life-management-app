@@ -13,7 +13,6 @@ import {
   ExternalLink,
   Footprints,
   Link2,
-  Link2Off,
   MessagesSquare,
   Pencil,
   RotateCcw,
@@ -653,20 +652,6 @@ function DayPlanItemRow({
                 ) : null}
                 {item.reference !== null ? (
                   <DayPlanItemReferenceLink reference={item.reference} />
-                ) : null}
-                {isUnlinkedFromTodo ? (
-                  <Tooltip>
-                    <TooltipTrigger
-                      className="inline-flex shrink-0 rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label="Not linked to a todo in your library"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Link2Off className="size-3.5" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      Not linked to a todo in your library
-                    </TooltipContent>
-                  </Tooltip>
                 ) : null}
               </div>
             ) : null}
