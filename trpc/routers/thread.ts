@@ -8,8 +8,10 @@ import {
   dayPlanItem,
   dayPlanItemSteps,
   thread,
+  threadAttachment,
   threadNote,
 } from "@/lib/schema";
+import { deleteThreadAttachmentFiles } from "@/lib/thread-attachment-storage";
 import {
   threadNoteContentFromReference,
   threadNoteContentSchema,
@@ -160,7 +162,30 @@ export const threadRouter = createTRPCRouter({
   delete: baseProcedure
     .input(threadIdInputSchema)
     .mutation(async ({ input }) => {
+      const attachments = await db
+        .select({ key: threadAttachment.key })
+        .from(threadAttachment)
+        .where(eq(threadAttachment.threadId, input.threadId));
+      await deleteThreadAttachmentFiles(attachments.map(({ key }) => key));
       await db.delete(thread).where(eq(thread.id, input.threadId));
+    }),
+
+  deleteAttachment: baseProcedure
+    .input(z.object({ attachmentId: z.uuid() }))
+    .mutation(async ({ input }) => {
+      const [found] = await db
+        .select({ key: threadAttachment.key })
+        .from(threadAttachment)
+        .where(eq(threadAttachment.id, input.attachmentId))
+        .limit(1);
+      if (found === undefined) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await deleteThreadAttachmentFiles([found.key]);
+      await db
+        .delete(threadAttachment)
+        .where(eq(threadAttachment.id, input.attachmentId));
     }),
 
   addNote: baseProcedure

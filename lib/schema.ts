@@ -82,6 +82,18 @@ export const threadNote = sqliteTable("thread_note", {
     .$defaultFn(() => new Date()),
 });
 
+export const threadAttachment = sqliteTable("thread_attachment", {
+  id: id(),
+  threadId: text("thread_id")
+    .notNull()
+    .references(() => thread.id, { onDelete: "cascade" }),
+  key: text().notNull(),
+  fileName: text("file_name").notNull(),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export const dayPlan = sqliteTable("day_plan", {
   id: id(),
   date: text().notNull().unique(),

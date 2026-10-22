@@ -1,0 +1,1 @@
+export const MAX_THREAD_ATTACHMENT_BYTES = 20 * 1024 * 1024;

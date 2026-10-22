@@ -7,7 +7,13 @@ import * as z from "zod";
 
 import ThreadDetailPageClient from "@/app/(app)/threads/[threadId]/page.client";
 import db from "@/lib/db";
-import { dayPlan, dayPlanItem, thread, threadNote } from "@/lib/schema";
+import {
+  dayPlan,
+  dayPlanItem,
+  thread,
+  threadAttachment,
+  threadNote,
+} from "@/lib/schema";
 
 async function ThreadDetail({
   params,
@@ -40,6 +46,16 @@ async function ThreadDetail({
     .where(eq(threadNote.threadId, threadId))
     .orderBy(desc(threadNote.createdAt));
 
+  const attachments = await db
+    .select({
+      id: threadAttachment.id,
+      fileName: threadAttachment.fileName,
+      createdAt: threadAttachment.createdAt,
+    })
+    .from(threadAttachment)
+    .where(eq(threadAttachment.threadId, threadId))
+    .orderBy(desc(threadAttachment.createdAt));
+
   const linkedItems = await db
     .select({
       id: dayPlanItem.id,
@@ -60,6 +76,11 @@ async function ThreadDetail({
         id: note.id,
         content: note.content,
         createdAt: note.createdAt.toISOString(),
+      }))}
+      attachments={attachments.map((attachment) => ({
+        id: attachment.id,
+        fileName: attachment.fileName,
+        createdAt: attachment.createdAt.toISOString(),
       }))}
       linkedItems={linkedItems}
     />
