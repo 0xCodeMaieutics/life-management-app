@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "start:prod": "next start --port 3001",
+    "start:prod": "next start --port 8082",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
